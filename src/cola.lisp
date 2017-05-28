@@ -21,22 +21,44 @@
 (defun option (&rest args)
   (apply #'make-instance 'option args))
 
-(defmethod find-subcommand ((cmd command) (subcmd string))
+(defmethod find-command ((cmd command) (subcmd string))
   (let ((ls (slot-value cmd 'subcommands)))
     (find subcmd ls :key #'get-name :test #'equal)))
 
-(defmethod equivalent ((opt option) (s string))
-  (let ((short (concatenate "-"  (slot-value opt 'short)))
-        (long  (concatenate "--" (slot-value opt 'long))))
+(defmethod equivalent ((s string) (opt option))
+  (let ((short (format () "-~A"  (slot-value opt 'short)))
+        (long  (format () "--~A" (slot-value opt 'long))))
     (or (equal s short)
         (equal s long))))
 
-(equivalent (option :short "h" :long "help" :help "print help")
-            "h")
-;(defmethod find-option ((cmd command) (opt string))
-;  (let ((ls (slot-value cmd 'options)))
-;    )
-;  )
+(defmethod find-option ((cmd command) (opt string))
+  (let ((ls (slot-value cmd 'options)))
+    (find opt ls :test #'equivalent)))
+
+  (setq cmd _sample_command_))
+  (setq args '("-h"))
+(defmethod parse ((cmd command) args &optional (result ()))
+  (unless args
+    result
+    (let* ((arg (first args))
+           (c (find-command cmd arg))
+           (o (find-option cmd arg)))
+      (cond
+        (c
+          ;(cdr args)
+          )
+        (o
+          "kiteru"
+          (if (slot-value o 'takes-value)
+            (parse cmd (cddr args))
+            (parse cmd (cdr args)))
+          )
+        (t
+          )
+        )
+      )
+    )
+  )
 
 (setq _sample_command_
   (command :name "sample" :about "test" :version "1.0"
@@ -49,12 +71,3 @@
 
 
 
-(setq _sample_args_
-      '("-h")
-      ;'("--help")
-      ;'("foo")
-      ;'("foo" "-v")
-      ;'("foo" "--verbose")
-      ;'("-e")
-      ;'("--error")
-      )
