@@ -7,6 +7,10 @@
   )
 (in-package :cola)
 
+(defmacro aif (pred true-part &optional else-part)
+  `(let ((it ,pred))
+     (if it ,true-part ,else-part)))
+
 (defclass option ()
   ((name        :initform "" :initarg :name :reader get-name)
    (short       :initform () :initarg :short)
@@ -26,10 +30,17 @@
   options
   arguments)
 
-(defun add-result-option! (result option)
+(defun add-result-option! (result option &optional (value t))
   (let ((o (result-options result)))
     (setf (result-options result)
-          (nconc o (list option)))))
+          (cons (cons option value) o))))
+
+(defun add-result-subcommand! (result cmd)
+  (let ((c (result-subcommand result)))
+    (setf (result-subcommand result)
+          (if c
+            (format () "~A.~A" c cmd)
+            cmd)))))
 
 (defun command (&rest args)
   (apply #'make-instance 'command args))
@@ -50,49 +61,29 @@
   (let ((ls (slot-value cmd 'options)))
     (find opt ls :test #'equivalent)))
 
-;(setq cmd _sample_command_)
-;(setq args '("-h"))
-;
-;(let* ((args '("-h" "foo"))
-;       (arg (first args))
-;       (result (make-result))
-;       (cmd _sample_command_)
-;       (c (find-command cmd arg))
-;       (o (find-option cmd arg)))
-;  (if (slot-value o 'takes-value)
-;    t
-;    (progn (setf (result-options result)
-;
-;                 ))
-;    ()
-;    )
-;  )
-
 (defmethod parse ((cmd command) args &optional (result (make-result)))
-  (unless args
+  (if (not  args)
     result
     (let* ((arg (first args))
            (c (find-command cmd arg))
            (o (find-option cmd arg)))
       (cond
         (c
-          ;(cdr args)
-          )
+          (add-result-subcommand! result arg)
+          (parse c (cdr args) result))
         (o
-          "kiteru"
-          ;(if (slot-value o 'takes-value)
-          ;  (progn
-          ;    (add-result-option! result )
-          ;    )
-          ;  (parse cmd (cddr args))
-          ;  (parse cmd (cdr args)))
-          )
+          (if (slot-value o 'takes-value)
+            (progn
+              (add-result-option! result arg (second args))
+              (parse cmd (cddr args) result))
+            (progn
+              (add-result-option! result arg)
+              (parse cmd (cdr args) result))))
         (t
-          )
+          (setf (result-arguments result) args)
+          result)
         )
-      )
-    )
-  )
+      )))
 
 
 (setq _sample_command_
@@ -105,8 +96,3 @@
                       (option :name "foo" :short "f" :long "foo" :takes-value t :help "bar")
                       )
            ))
-
-
-
-
-
