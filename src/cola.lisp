@@ -3,8 +3,11 @@
   (:use :cl)
   (:export
     :option
-    :command)
-  )
+    :command
+    :optionp
+    :parse
+    :result->values
+    ))
 (in-package :cola)
 
 (defmacro aif (pred true-part &optional else-part)
@@ -28,7 +31,8 @@
 (defstruct result
   subcommand
   options
-  arguments)
+  arguments
+  errors)
 
 (defun add-result-option! (result option &optional (value t))
   (let ((o (result-options result)))
@@ -40,7 +44,19 @@
     (setf (result-subcommand result)
           (if c
             (format () "~A.~A" c cmd)
-            cmd)))))
+            cmd))))
+
+(defun add-result-error! (result error)
+  (let ((es (result-errors result)))
+    (setf (result-errors result)
+          (cons (cons option value) o)
+          (nconc es (list error))
+          )))
+
+(defun result->values (result)
+  (values (result-options result)
+          (result-subcommand result)
+          (result-arguments result)))
 
 (defun command (&rest args)
   (apply #'make-instance 'command args))
@@ -61,9 +77,13 @@
   (let ((ls (slot-value cmd 'options)))
     (find opt ls :test #'equivalent)))
 
+(defun optionp (s)
+  (position #\- s))
+
 (defmethod parse ((cmd command) args &optional (result (make-result)))
+  "return (values option subcommand rest-args)"
   (if (not  args)
-    result
+    (result->values result)
     (let* ((arg (first args))
            (c (find-command cmd arg))
            (o (find-option cmd arg)))
@@ -80,19 +100,9 @@
               (add-result-option! result arg)
               (parse cmd (cdr args) result))))
         (t
+          ;(when (optionp arg)
+          ;  (error "Invalid option: ~S." arg))
           (setf (result-arguments result) args)
-          result)
-        )
-      )))
+          (parse () () result))
+        ))))
 
-
-(setq _sample_command_
-  (command :name "sample" :about "test" :version "1.0"
-           :subcommands (list
-                          (command :name "foo" :about "foobar" :version "1.0"
-                                   :options (list (option :short "v" :long "verbose" :help "baz"))))
-           :options (list
-                      (option :name "help" :short "h" :long "help" :help "print help")
-                      (option :name "foo" :short "f" :long "foo" :takes-value t :help "bar")
-                      )
-           ))
