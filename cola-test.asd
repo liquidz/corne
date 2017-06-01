@@ -11,7 +11,8 @@
   :author ""
   :license ""
   :depends-on (:cola
-               :prove)
+               :prove
+               :alexandria)
   :components ((:module "t"
                 :components
                 ((:test-file "cola"))))

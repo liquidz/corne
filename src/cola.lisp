@@ -1,10 +1,13 @@
 (in-package :cl-user)
 (defpackage cola
-  (:use :cl)
+  (:use
+    :cl
+    :alexandria)
   (:export
     :option
     :command
     :optionp
+    :parse-command
     :parse
     :result->values
     ))
@@ -29,10 +32,10 @@
    (options     :initform () :initarg :options)))
 
 (defstruct result
-  subcommand
-  options
+  command
   arguments
-  errors)
+  subcommand
+  options)
 
 (defun add-result-option! (result option &optional (value t))
   (let ((o (result-options result)))
@@ -46,12 +49,12 @@
             (format () "~A.~A" c cmd)
             cmd))))
 
-(defun add-result-error! (result error)
-  (let ((es (result-errors result)))
-    (setf (result-errors result)
-          (cons (cons option value) o)
-          (nconc es (list error))
-          )))
+;(defun add-result-error! (result error)
+;  (let ((es (result-errors result)))
+;    (setf (result-errors result)
+;          (cons (cons option value) o)
+;          (nconc es (list error))
+;          )))
 
 (defun result->values (result)
   (values (result-options result)
@@ -79,6 +82,15 @@
 
 (defun optionp (s)
   (position #\- s))
+
+(defmethod parse-command ((cmd command) args &optional (result (make-result)))
+  (let* ((arg (first args))
+         (c   (and arg (find-command cmd arg))))
+    (if c
+      (progn
+        (add-result-subcommand! result arg)
+        (parse-command c (cdr args) result))
+      (list cmd args result))))
 
 (defmethod parse ((cmd command) args &optional (result (make-result)))
   "return (values option subcommand rest-args)"
