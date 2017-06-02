@@ -16,33 +16,43 @@
 (ok (cola:optionp "--help"))
 (ok (not (cola:optionp "help")))
 
-(defmacro parser-test (parser cmd args &rest tests)
-  (let ((result-name (gensym)))
-    `(let* ((,result-name (,parser ,cmd ,args))
-            (command (first ,result-name))
-            (arguments (second ,result-name)))
-       (multiple-value-bind (options subcommand arguments) (result->values (third ,result-name))
-         ,@tests))))
+;(defmacro parser-test (parser cmd args &rest tests)
+;  (let ((result-name (gensym)))
+;    `(let* ((,result-name (,parser ,cmd ,args))
+;            (command (first ,result-name))
+;            (arguments (second ,result-name)))
+;       (multiple-value-bind (options subcommand arguments) (result->values (third ,result-name))
+;         ,@tests))))
 
-
-; parse-command
+;;; parse-subcommand
 (let* ((cc (make-instance 'command :name "ccc"))
        (bc (make-instance 'command :name "bbb" :subcommands (list cc)))
        (ac (make-instance 'command :name "aaa" :subcommands (list bc))))
-  (parser-test cola:parse-command ac '("bbb" "ccc")
-    )
-  (let ((ret (cola:parse-command a '("bbb" "ccc"))))
-    (is (first ret) c)
-    (is (second ret) '())
-    (is (gethash "subcommand" (third ret)) "bbb.ccc"))
-  (let ((ret (cola:parse-command a '("bbb" "ddd"))))
-    (is (first ret) b)
-    (is (second ret) '("ddd"))
-    (is (gethash "subcommand" (third ret)) "bbb"))
-  (let ((ret (cola:parse-command a '("ddd"))))
-    (is (first ret) a)
-    (is (second ret) '("ddd"))
-    (ok (not (gethash "subcommand" (third ret))))))
+  (is-values
+    (cola:parse-subcommand ac '("bbb" "ccc"))
+    (list cc '() "bbb.ccc"))
+  (is-values
+    (cola:parse-subcommand ac '("bbb" "ddd"))
+    (list bc '("ddd") "bbb"))
+  (is-values
+    (cola:parse-subcommand ac '("ddd"))
+    (list ac '("ddd") nil)))
+
+;;; parse-option
+(let* ((ho (make-instance 'option :name "help" :short "h" :long "help"))
+       (fo (make-instance 'option :name "file" :short "f" :long "file" :takes-value t))
+       (cmd (make-instance 'command :name "aaa" :options (list ho fo))))
+  (is-values
+    (cola:parse-option cmd '("-h" "aaa"))
+    (list cmd '("aaa") '(("help" . t))))
+  (is-values
+    (cola:parse-option cmd '("-f" "aaa" "bbb"))
+    (list cmd '("bbb") '(("file" . "aaa"))))
+  (is-values
+    (cola:parse-option cmd '("-h" "-f" "aaa" "bbb"))
+    (list cmd '("bbb") '(("help" . t)
+                         ("file" . "aaa"))))
+  )
 
 ;; parse
 ;(let* ((foo-opt-v (make-instance 'option :short "v" :long "verbose" :help "baz"))

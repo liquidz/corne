@@ -8,19 +8,15 @@
     :option
     :command
     :optionp
-    :parse-command
+    :parse-subcommand
+    :parse-option
     :parse
-    :result->values
-    :result-options
-    :result-subcommand
-    :result-arguments
     ))
 (in-package :cola)
 
 (defmacro aif (pred true-part &optional else-part)
   `(let ((it ,pred))
      (if it ,true-part ,else-part)))
-
 
 (defclass option ()
   ((name        :initform "" :initarg :name :reader get-name)
@@ -57,12 +53,6 @@
   (asetf (gethash "options" result-hash)
          (cons (cons option value) it)))
 
-(defun add-result-subcommand! (result-hash cmd)
-  (asetf (gethash "subcommand" result-hash)
-         (if it
-           (format nil "~A.~A" it cmd)
-           cmd)))
-
 (defun result->values (result)
   (values (result-options result)
           (result-subcommand result)
@@ -87,60 +77,50 @@
   (let ((ls (slot-value cmd 'options)))
     (find opt ls :test #'equivalent)))
 
-(defmethod parse ((opt option) args)
-  (if (slot-value opt 'takes-value)
-    (values (cddr args) (cons (first args) (second args)))
-    (values (cdr args) (cons (first args) t))))
-
 (defun optionp (s)
   (position #\- s))
 
-(defmethod parse-command ((cmd command) args result)
+(defmethod parse-subcommand ((cmd command) args &optional subcmds)
   (let* ((arg (first args))
          (c   (and arg (find-command cmd arg))))
     (if c
-      (progn
-        (add-result-subcommand! result arg)
-        (parse-command c (cdr args) result))
-      (list cmd args result))))
+      (parse-subcommand c (cdr args) (cons arg subcmds))
+      (values cmd args
+              (and subcmds (format nil "~{~a~^.~}" (reverse subcmds)))))))
 
-(defmethod parse-option ((cmd command) args result)
-  (let* ((arg (first args))
-         (o (find-option cmd arg)))
+(defmethod parse-option ((cmd command) args &optional opts)
+  (let ((o (find-option cmd (first args))))
     (if o
       (if (slot-value o 'takes-value)
-        (progn
-          (add-result-option! result arg (second args))
-          (parse-option cmd (cddr args) result))
-        (progn
-          (add-result-option! result arg)
-          (parse-option cmd (cdr args) result)))
-      (list cmd args result))))
+        (parse-option cmd (cddr args)
+                      (cons (cons (get-name o) (second args)) opts))
+        (parse-option cmd (cdr args) (cons (cons (get-name o) t) opts)))
+      (values cmd args (reverse opts)))))
 
 
-(defmethod parse ((cmd command) args &optional (result (make-result)))
-  "return (values option subcommand rest-args)"
-  (if (not  args)
-    (result->values result)
-    (let* ((arg (first args))
-           (c (find-command cmd arg))
-           (o (find-option cmd arg)))
-      (cond
-        (c
-          (add-result-subcommand! result arg)
-          (parse c (cdr args) result))
-        (o
-          (if (slot-value o 'takes-value)
-            (progn
-              (add-result-option! result arg (second args))
-              (parse cmd (cddr args) result))
-            (progn
-              (add-result-option! result arg)
-              (parse cmd (cdr args) result))))
-        (t
-          ;(when (optionp arg)
-          ;  (error "Invalid option: ~S." arg))
-          (setf (result-arguments result) args)
-          (parse () () result))
-        ))))
+;(defmethod parse ((cmd command) args &optional (result (make-result)))
+;  "return (values option subcommand rest-args)"
+;  (if (not  args)
+;    (result->values result)
+;    (let* ((arg (first args))
+;           (c (find-command cmd arg))
+;           (o (find-option cmd arg)))
+;      (cond
+;        (c
+;          (add-result-subcommand! result arg)
+;          (parse c (cdr args) result))
+;        (o
+;          (if (slot-value o 'takes-value)
+;            (progn
+;              (add-result-option! result arg (second args))
+;              (parse cmd (cddr args) result))
+;            (progn
+;              (add-result-option! result arg)
+;              (parse cmd (cdr args) result))))
+;        (t
+;          ;(when (optionp arg)
+;          ;  (error "Invalid option: ~S." arg))
+;          (setf (result-arguments result) args)
+;          (parse () () result))
+;        ))))
 
