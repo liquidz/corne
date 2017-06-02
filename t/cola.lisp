@@ -7,7 +7,7 @@
 
 ;; NOTE: To run this test file, execute `(asdf:test-system :cola)' in your Lisp.
 
-(plan 6)
+(plan nil)
 
 (ok (typep (cola:option :name "help" :short "h" :long "help" :help "print help") 'option))
 
@@ -16,16 +16,33 @@
 (ok (cola:optionp "--help"))
 (ok (not (cola:optionp "help")))
 
+(defmacro parser-test (parser cmd args &rest tests)
+  (let ((result-name (gensym)))
+    `(let* ((,result-name (,parser ,cmd ,args))
+            (command (first ,result-name))
+            (arguments (second ,result-name)))
+       (multiple-value-bind (options subcommand arguments) (result->values (third ,result-name))
+         ,@tests))))
+
+
 ; parse-command
-(let* ((c (make-instance 'command :name "ccc"))
-       (b (make-instance 'command :name "bbb" :subcommands (list c)))
-       (a (make-instance 'command :name "aaa" :subcommands (list b))))
-  (let ((ret (cola:parse-command a '("bbb" "ccc"))))
-    (is c (first ret))
-    (is () (second ret))
-    ;(multiple-value-bind (third ret) )
+(let* ((cc (make-instance 'command :name "ccc"))
+       (bc (make-instance 'command :name "bbb" :subcommands (list cc)))
+       (ac (make-instance 'command :name "aaa" :subcommands (list bc))))
+  (parser-test cola:parse-command ac '("bbb" "ccc")
     )
-  )
+  (let ((ret (cola:parse-command a '("bbb" "ccc"))))
+    (is (first ret) c)
+    (is (second ret) '())
+    (is (gethash "subcommand" (third ret)) "bbb.ccc"))
+  (let ((ret (cola:parse-command a '("bbb" "ddd"))))
+    (is (first ret) b)
+    (is (second ret) '("ddd"))
+    (is (gethash "subcommand" (third ret)) "bbb"))
+  (let ((ret (cola:parse-command a '("ddd"))))
+    (is (first ret) a)
+    (is (second ret) '("ddd"))
+    (ok (not (gethash "subcommand" (third ret))))))
 
 ;; parse
 ;(let* ((foo-opt-v (make-instance 'option :short "v" :long "verbose" :help "baz"))

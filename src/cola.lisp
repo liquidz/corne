@@ -2,7 +2,8 @@
 (defpackage cola
   (:use
     :cl
-    :alexandria)
+    :cola.util
+    )
   (:export
     :option
     :command
@@ -10,12 +11,16 @@
     :parse-command
     :parse
     :result->values
+    :result-options
+    :result-subcommand
+    :result-arguments
     ))
 (in-package :cola)
 
 (defmacro aif (pred true-part &optional else-part)
   `(let ((it ,pred))
      (if it ,true-part ,else-part)))
+
 
 (defclass option ()
   ((name        :initform "" :initarg :name :reader get-name)
@@ -32,29 +37,31 @@
    (options     :initform () :initarg :options)))
 
 (defstruct result
-  command
   arguments
   subcommand
   options)
 
-(defun add-result-option! (result option &optional (value t))
-  (let ((o (result-options result)))
-    (setf (result-options result)
-          (cons (cons option value) o))))
+;(defcommand
+;  :name "hello"
+;  :about "foo"
+;  :version "1.0"
+;  (subcommand
+;    :name "bar"
+;    :about "baz"
+;    (option "help" -h --help "this is help"
+;      )
+;    )
+;  )
 
-(defun add-result-subcommand! (result cmd)
-  (let ((c (result-subcommand result)))
-    (setf (result-subcommand result)
-          (if c
-            (format () "~A.~A" c cmd)
-            cmd))))
+(defun add-result-option! (result-hash option &optional (value t))
+  (asetf (gethash "options" result-hash)
+         (cons (cons option value) it)))
 
-;(defun add-result-error! (result error)
-;  (let ((es (result-errors result)))
-;    (setf (result-errors result)
-;          (cons (cons option value) o)
-;          (nconc es (list error))
-;          )))
+(defun add-result-subcommand! (result-hash cmd)
+  (asetf (gethash "subcommand" result-hash)
+         (if it
+           (format nil "~A.~A" it cmd)
+           cmd)))
 
 (defun result->values (result)
   (values (result-options result)
@@ -80,10 +87,15 @@
   (let ((ls (slot-value cmd 'options)))
     (find opt ls :test #'equivalent)))
 
+(defmethod parse ((opt option) args)
+  (if (slot-value opt 'takes-value)
+    (values (cddr args) (cons (first args) (second args)))
+    (values (cdr args) (cons (first args) t))))
+
 (defun optionp (s)
   (position #\- s))
 
-(defmethod parse-command ((cmd command) args &optional (result (make-result)))
+(defmethod parse-command ((cmd command) args result)
   (let* ((arg (first args))
          (c   (and arg (find-command cmd arg))))
     (if c
@@ -91,6 +103,20 @@
         (add-result-subcommand! result arg)
         (parse-command c (cdr args) result))
       (list cmd args result))))
+
+(defmethod parse-option ((cmd command) args result)
+  (let* ((arg (first args))
+         (o (find-option cmd arg)))
+    (if o
+      (if (slot-value o 'takes-value)
+        (progn
+          (add-result-option! result arg (second args))
+          (parse-option cmd (cddr args) result))
+        (progn
+          (add-result-option! result arg)
+          (parse-option cmd (cdr args) result)))
+      (list cmd args result))))
+
 
 (defmethod parse ((cmd command) args &optional (result (make-result)))
   "return (values option subcommand rest-args)"

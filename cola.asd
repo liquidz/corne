@@ -14,7 +14,8 @@
   :depends-on (:alexandria)
   :components ((:module "src"
                 :components
-                ((:file "cola"))))
+                ((:file "cola" :depends-on ("util"))
+                 (:file "util"))))
   :description ""
   :long-description
   #.(with-open-file (stream (merge-pathnames
