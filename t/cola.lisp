@@ -44,29 +44,39 @@
        (cmd (make-instance 'command :name "aaa" :options (list ho fo))))
   (is-values
     (cola:parse-option cmd '("-h" "aaa"))
-    (list cmd '("aaa") '(("help" . t))))
+    (list '("aaa") '(("help" . t))))
   (is-values
     (cola:parse-option cmd '("-f" "aaa" "bbb"))
-    (list cmd '("bbb") '(("file" . "aaa"))))
+    (list '("bbb") '(("file" . "aaa"))))
   (is-values
     (cola:parse-option cmd '("-h" "-f" "aaa" "bbb"))
-    (list cmd '("bbb") '(("help" . t)
+    (list '("bbb") '(("help" . t)
                          ("file" . "aaa"))))
+  (is-values
+    (cola:parse-option cmd '("-x" "aaa"))
+    (list '("-x" "aaa") '()))
   )
 
 ;; parse
-;(let* ((foo-opt-v (make-instance 'option :short "v" :long "verbose" :help "baz"))
-;       (foo-cmd   (make-instance 'command :name "foo" :about "foobar" :options (list foo-opt-v)))
-;       (opt-h     (make-instance 'option :name "help" :short "h" :long "help" :help "print help"))
-;       (opt-f     (make-instance 'option :name "foo" :short "f" :long "foo" :takes-value t :help "bar"))
-;       (cmd       (make-instance 'command :name "sample" :about "test"
-;                                 :subcommands (list foo-cmd)
-;                                 :options (list opt-h opt-f))))
-;  (print (cola:parse cmd '("foo" "-v" "bar")
-;  ;(multiple-value-bind (a b c) (cola:parse cmd '("foo" "-v" "bar"))
-;  ;  (is b "foo")
-;  ;  ;(print c)
-;  ;  )
-;  ))
+(let* ((foo-opt-v (make-instance
+                    'option :name "verbose"
+                    :short "v" :long "verbose" :help "baz"))
+       (foo-cmd (make-instance
+                  'command :name "foo" :about "foobar"
+                  :options (list foo-opt-v)))
+       (opt-h (make-instance
+                'option :name "help"
+                :short "h" :long "help" :help "print help"))
+       (opt-f (make-instance
+                'option :name "foo" :short "f" :long "foo"
+                :takes-value t :help "bar"))
+       (cmd (make-instance
+              'command :name "sample" :about "test"
+              :subcommands (list foo-cmd)
+              :options (list opt-h opt-f))))
+  (is-values (cola:parse cmd '("foo" "-v" "bar"))
+             (list '(("verbose" . t)) "foo" '("bar")))
+  (is-error (cola:parse cmd '("-x")) 'simple-error)
+ )
 
 (finalize)

@@ -10,8 +10,7 @@
     :optionp
     :parse-subcommand
     :parse-option
-    :parse
-    ))
+    :parse))
 (in-package :cola)
 
 (defmacro aif (pred true-part &optional else-part)
@@ -48,15 +47,6 @@
 ;      )
 ;    )
 ;  )
-
-(defun add-result-option! (result-hash option &optional (value t))
-  (asetf (gethash "options" result-hash)
-         (cons (cons option value) it)))
-
-(defun result->values (result)
-  (values (result-options result)
-          (result-subcommand result)
-          (result-arguments result)))
 
 (defun command (&rest args)
   (apply #'make-instance 'command args))
@@ -95,32 +85,19 @@
         (parse-option cmd (cddr args)
                       (cons (cons (get-name o) (second args)) opts))
         (parse-option cmd (cdr args) (cons (cons (get-name o) t) opts)))
-      (values cmd args (reverse opts)))))
+      (values args (reverse opts)))))
 
+(defmacro if-not (pred true &optional false)
+  (if (not ,pred) ,true ,false))
 
-;(defmethod parse ((cmd command) args &optional (result (make-result)))
-;  "return (values option subcommand rest-args)"
-;  (if (not  args)
-;    (result->values result)
-;    (let* ((arg (first args))
-;           (c (find-command cmd arg))
-;           (o (find-option cmd arg)))
-;      (cond
-;        (c
-;          (add-result-subcommand! result arg)
-;          (parse c (cdr args) result))
-;        (o
-;          (if (slot-value o 'takes-value)
-;            (progn
-;              (add-result-option! result arg (second args))
-;              (parse cmd (cddr args) result))
-;            (progn
-;              (add-result-option! result arg)
-;              (parse cmd (cdr args) result))))
-;        (t
-;          ;(when (optionp arg)
-;          ;  (error "Invalid option: ~S." arg))
-;          (setf (result-arguments result) args)
-;          (parse () () result))
-;        ))))
+(defmethod parse ((cmd command) args)
+  "return (values option subcommand rest-args)"
+  (multiple-value-bind (cmd args subcommand) (parse-subcommand cmd args)
+    (multiple-value-bind (args options) (parse-option cmd args)
+      (when (optionp (first args))
+        (error "Unknown option: ~A" (first args)))
+      (values options subcommand args)
+      )
+    )
+  )
 
