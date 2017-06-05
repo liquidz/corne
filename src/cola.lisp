@@ -7,29 +7,43 @@
   (:export
     :option
     :command
+    :argument
     :optionp
     :parse-subcommand
     :parse-option
-    :parse))
+    :parse-argument
+    :parse
+    :option-error
+    :argument-error
+    :help
+    ))
 (in-package :cola)
+
+(defvar *delm* "    ")
+
 
 (defmacro aif (pred true-part &optional else-part)
   `(let ((it ,pred))
      (if it ,true-part ,else-part)))
 
-(defclass option ()
-  ((name        :initform "" :initarg :name :reader get-name)
-   (short       :initform () :initarg :short)
+(defclass has-name ()
+  ((name :initform "" :initarg :name :reader get-name)))
+
+(defclass option (has-name)
+  ((short       :initform () :initarg :short)
    (long        :initform () :initarg :long)
    (help        :initform "" :initarg :help)
    (takes-value :initform () :initarg :takes-value)))
 
-(defclass command ()
-  ((name        :initform "" :initarg :name :reader get-name)
-   (about       :initform "" :initarg :about)
+(defclass argument (has-name)
+  ((help :initform "" :initarg :help)))
+
+(defclass command (has-name)
+  ((about       :initform "" :initarg :about)
    (version     :initform "" :initarg :version)
    (subcommands :initform () :initarg :subcommands)
-   (options     :initform () :initarg :options)))
+   (options     :initform () :initarg :options)
+   (arguments   :initform () :initarg :arguments)))
 
 (defstruct result
   arguments
@@ -87,17 +101,102 @@
         (parse-option cmd (cdr args) (cons (cons (get-name o) t) opts)))
       (values args (reverse opts)))))
 
-(defmacro if-not (pred true &optional false)
-  (if (not ,pred) ,true ,false))
+(defmethod parse-argument ((cmd command) user-args)
+  "returns (values VALID_USER_ARGS MISSING_ARGS TOO_MUCH_ARGS)"
+  (let* ((args (slot-value cmd 'arguments))
+         (args-len (length args))
+         (user-args-len (length user-args)))
+    (if (or (not args) (= args-len user-args-len))
+      (values user-args () ())
+      (if (> user-args-len args-len)
+        (values (subseq user-args 0 args-len) () (subseq user-args args-len))
+        (values user-args (subseq args user-args-len) ())))))
+
+(define-condition option-error (simple-error)
+  ((option :initarg :option :reader option-error-option))
+  (:report (lambda (c s)
+             (format s "Invalid option: ~A" (option-error-option c)))))
+
+(define-condition argument-error (simple-error)
+  ;; ARGUMENTS shoud be list of string
+  ;; REASON shoud be string
+  ((arguments :initarg :arguments :reader argument-error-arguments)
+   (reason :initarg :reason :reader argument-error-reason))
+  (:report (lambda (c s)
+            (format s "Invalid arguments: ~S, reason: ~A"
+                    (argument-error-arguments c) (argument-error-reason c)))))
+
+#|
+FLAGS:
+    -h, --help             Prints help information
+    -V, --version          Prints version information
+
+OPTIONS:
+    -r, --rule <FILE>    rule TOML file
+|#
+(defmethod help ((opt option))
+  (let ((s (slot-value opt 'short))
+        (l (slot-value opt 'long))
+        (ret (cons "" (slot-value opt 'help))))
+    (cond
+      ((and s l)
+       (setf (car ret) (format nil "-~A, --~A" s l)))
+      (s
+        (setf (car ret) (format nil "-~A" s)))
+      (l
+        (setf (car ret) (format nil "--~A" l))))
+    (when (slot-value opt 'takes-value)
+      (setf (car ret) (format nil "~A <VALUE>" (car ret))))
+    ret))
+
+(defmethod help ((arg argument))
+  (let ((name (get-name arg))
+        (help (slot-value arg 'help)))
+    (cons (format nil "<~A>" (string-upcase name))
+          help)))
+
+;(defmethod help ((cmd command))
+;  (let* ((name (get-name cmd))
+;         (about (slot-value cmd 'about))
+;         (version (slot-value cmd 'version))
+;         (subcommands (slot-value cmd 'subcommands))
+;         (options (slot-value cmd 'options))
+;         (arguments (slot-value cmd 'arguments)))
+;    (list
+;      (format nil "~A ~A~%" name ver)
+;      (format nil "USAGE: ~A~A~A"
+;              name
+;              (if options " [OPTIONS]" "")
+;              (if subcommands " [SUBCOMMAND]" "")
+;              (if (and arguments (not subcommands))
+;                ;(format nil "~{~a~^.~}" (reverse subcmds))
+;                )
+;
+;
+;              )
+;      (if options
+;        )
+;      )
+;
+;    )
+;  )
 
 (defmethod parse ((cmd command) args)
   "return (values option subcommand rest-args)"
   (multiple-value-bind (cmd args subcommand) (parse-subcommand cmd args)
     (multiple-value-bind (args options) (parse-option cmd args)
-      (when (optionp (first args))
-        (error "Unknown option: ~A" (first args)))
-      (values options subcommand args)
-      )
-    )
-  )
+      (multiple-value-bind (valid-args missing-args too-much-args) (parse-argument cmd args)
+        (when (optionp (first valid-args))
+          (error 'option-error :option (first valid-args)))
+        (when missing-args
+          (error 'argument-error
+                 :arguments (mapcar #'get-name missing-args)
+                 :reason "missing arguments"))
+        (when too-much-args
+          (error 'argument-error
+                 :arguments too-much-args
+                 :reason "too much arguments"))
+        (values options subcommand args)
+        )
+      )))
 

@@ -9,20 +9,12 @@
 
 (plan nil)
 
-(ok (typep (cola:option :name "help" :short "h" :long "help" :help "print help") 'option))
+;(ok (typep (cola:option :name "help" :short "h" :long "help" :help "print help") 'option))
 
 ; optionp
 (ok (cola:optionp "-h"))
 (ok (cola:optionp "--help"))
 (ok (not (cola:optionp "help")))
-
-;(defmacro parser-test (parser cmd args &rest tests)
-;  (let ((result-name (gensym)))
-;    `(let* ((,result-name (,parser ,cmd ,args))
-;            (command (first ,result-name))
-;            (arguments (second ,result-name)))
-;       (multiple-value-bind (options subcommand arguments) (result->values (third ,result-name))
-;         ,@tests))))
 
 ;;; parse-subcommand
 (let* ((cc (make-instance 'command :name "ccc"))
@@ -54,16 +46,33 @@
                          ("file" . "aaa"))))
   (is-values
     (cola:parse-option cmd '("-x" "aaa"))
-    (list '("-x" "aaa") '()))
-  )
+    (list '("-x" "aaa") '())))
+
+;; parse-argument
+(let* ((arg-a (make-instance 'argument :name "aaa" :help "foo"))
+       (arg-b (make-instance 'argument :name "bbb" :help "bar"))
+       (cmd (make-instance
+              'command :name "sample" :about "test"
+              :arguments (list arg-a arg-b))))
+  (is-values (parse-argument cmd '("foo" "bar"))
+             (list '("foo" "bar") () ()))
+  (is-values (parse-argument cmd '("foo"))
+             (list '("foo") (list arg-b) ()))
+  (is-values (parse-argument cmd '("foo" "bar" "baz"))
+             (list '("foo" "bar") () '("baz"))))
 
 ;; parse
-(let* ((foo-opt-v (make-instance
+(let* ((arg-a (make-instance
+                'argument :name "aaa" :help "help aaa"))
+       (arg-b (make-instance
+                'argument :name "bbb" :help "help bbb"))
+       (foo-opt-v (make-instance
                     'option :name "verbose"
                     :short "v" :long "verbose" :help "baz"))
        (foo-cmd (make-instance
                   'command :name "foo" :about "foobar"
-                  :options (list foo-opt-v)))
+                  :options (list foo-opt-v)
+                  :arguments (list arg-a)))
        (opt-h (make-instance
                 'option :name "help"
                 :short "h" :long "help" :help "print help"))
@@ -73,10 +82,30 @@
        (cmd (make-instance
               'command :name "sample" :about "test"
               :subcommands (list foo-cmd)
-              :options (list opt-h opt-f))))
+              :options (list opt-h opt-f)
+              :arguments (list arg-a arg-b))))
   (is-values (cola:parse cmd '("foo" "-v" "bar"))
              (list '(("verbose" . t)) "foo" '("bar")))
-  (is-error (cola:parse cmd '("-x")) 'simple-error)
- )
+  (is-values (cola:parse cmd '("arg1" "arg2"))
+             (list nil nil '("arg1" "arg2")))
+  (is-error (cola:parse cmd '("-x")) 'cola:option-error)
+  (is-error (cola:parse cmd '("fewarg")) 'cola:argument-error)
+  (is-error (cola:parse cmd '("too" "much" "arg")) 'cola:argument-error))
+
+;; option help
+(let (
+      (flg-opt (make-instance 'option :name "flag" :short "f" :long "flag" :help "foo"))
+      (flg-opt-only-short (make-instance 'option :name "flag" :short "f" :help "foo"))
+      (flg-opt-only-long (make-instance 'option :name "flag" :long "flag" :help "foo"))
+      (val-opt (make-instance 'option :name "value" :short "v" :long "value" :takes-value t :help "bar"))
+      )
+  (is (cola:help flg-opt) '("-f, --flag" . "foo"))
+  (is (cola:help flg-opt-only-short) '("-f" . "foo"))
+  (is (cola:help flg-opt-only-long) '("--flag" . "foo"))
+  (is (cola:help val-opt) '("-v, --value <VALUE>" . "bar")))
+
+;;; argument help
+(let ((arg (make-instance 'argument :name "foo" :help "bar")))
+  (is (cola:help arg) '("<FOO>" . "bar")))
 
 (finalize)
