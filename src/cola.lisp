@@ -8,6 +8,7 @@
     :option
     :command
     :@option
+    :@arg
     :argument
     :optionp
     :parse-subcommand
@@ -46,11 +47,6 @@
    (options     :initform () :initarg :options)
    (arguments   :initform () :initarg :arguments)))
 
-(defstruct result
-  arguments
-  subcommand
-  options)
-
 ;(defcommand
 ;  :name "hello"
 ;  :about "foo"
@@ -66,20 +62,27 @@
 ; (@option name -h --help "Prints help information")
 (defmacro @option (name &rest args)
   (let* ((name (string-downcase (symbol-name name)))
-         (options (loop for x in args while (and (symbolp x) (optionp (symbol-name x)))
-                        collect (string-downcase (symbol-name x))))
+         (syms (loop for x in args while (symbolp x) collect (symbol-name x)))
+         (options (loop for x in syms while (optionp x)
+                        collect (string-downcase x)))
          (short (find-if (lambda (opt) (= 1 (mismatch opt "--"))) options))
          (long (find-if (lambda (opt) (= 2 (mismatch opt "--"))) options))
-         (help (find-if #'stringp args)))
+         (takes-value (position "+TAKES-VALUE" syms :test #'equal))
+         (help (or (find-if #'stringp args) "")))
     `(make-instance 'option
                     :name ,name
                     ,@(if short (list :short (subseq short 1)))
                     ,@(if long (list :long (subseq long 2)))
-                    ,@(if (position '+takes-value args) (list :takes-value t))
+                    ,@(if takes-value (list :takes-value t))
                     :help ,help)))
 
-;(@option myhelp --help +takes-value "hello")
+(defmacro @arg (name &optional help)
+  (let ((name (string-downcase (symbol-name name)))
+        (help (if (and help (stringp help)) help "")))
+    `(make-instance 'argument :name ,name :help ,help)))
 
+;(defclass argument (has-name)
+;  ((help :initform "" :initarg :help)))
 ;(defun command (&rest args)
 ;  (apply #'make-instance 'command args))
 ;(defun option (&rest args)

@@ -21,10 +21,20 @@
       '(make-instance 'option :name "foo" :short "f" :long "foo" :takes-value t :help "bar"))
   (is (macroexpand-1 '(@option foo -f --foo "bar"))
       '(make-instance 'option :name "foo" :short "f" :long "foo" :help "bar"))
-  )
-;(let ((opt (@option foo -f --foo "bar")))
-;  (ok (equalp opt (make-instance 'option :name "foo" :short "f" :long "foo" :help "bar")))
-;  )
+  (is (macroexpand-1 '(@option foo -f "bar"))
+      '(make-instance 'option :name "foo" :short "f" :help "bar"))
+  (is (macroexpand-1 '(@option foo --foo "bar"))
+      '(make-instance 'option :name "foo" :long "foo" :help "bar"))
+  (is (macroexpand-1 '(@option foo -f))
+      '(make-instance 'option :name "foo" :short "f" :help "")))
+
+(subtest "@arg"
+  (is (macroexpand-1 '(@arg foo "bar"))
+      '(make-instance 'argument :name "foo" :help "bar"))
+  (is (macroexpand-1 '(@arg foo))
+      '(make-instance 'argument :name "foo" :help ""))
+  (is (macroexpand-1 '(@arg foo bar))
+      '(make-instance 'argument :name "foo" :help "")))
 
 ;;; parse-subcommand
 (let* ((cc (make-instance 'command :name "ccc"))
