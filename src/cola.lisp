@@ -7,6 +7,7 @@
   (:export
     :option
     :command
+    :@option
     :argument
     :optionp
     :parse-subcommand
@@ -62,10 +63,27 @@
 ;    )
 ;  )
 
-(defun command (&rest args)
-  (apply #'make-instance 'command args))
-(defun option (&rest args)
-  (apply #'make-instance 'option args))
+; (@option name -h --help "Prints help information")
+(defmacro @option (name &rest args)
+  (let* ((name (string-downcase (symbol-name name)))
+         (options (loop for x in args while (and (symbolp x) (optionp (symbol-name x)))
+                        collect (string-downcase (symbol-name x))))
+         (short (find-if (lambda (opt) (= 1 (mismatch opt "--"))) options))
+         (long (find-if (lambda (opt) (= 2 (mismatch opt "--"))) options))
+         (help (find-if #'stringp args)))
+    `(make-instance 'option
+                    :name ,name
+                    ,@(if short (list :short (subseq short 1)))
+                    ,@(if long (list :long (subseq long 2)))
+                    ,@(if (position '+takes-value args) (list :takes-value t))
+                    :help ,help)))
+
+;(@option myhelp --help +takes-value "hello")
+
+;(defun command (&rest args)
+;  (apply #'make-instance 'command args))
+;(defun option (&rest args)
+;  (apply #'make-instance 'option args))
 
 (defmethod find-command ((cmd command) (subcmd string))
   (let ((ls (slot-value cmd 'subcommands)))
@@ -112,6 +130,9 @@
         (values (subseq user-args 0 args-len) () (subseq user-args args-len))
         (values user-args (subseq args user-args-len) ())))))
 
+(defmethod to-str ((arg argument))
+  (format nil "<~A>" (string-upcase (get-name arg))))
+
 (define-condition option-error (simple-error)
   ((option :initarg :option :reader option-error-option))
   (:report (lambda (c s)
@@ -155,6 +176,11 @@ OPTIONS:
     (cons (format nil "<~A>" (string-upcase name))
           help)))
 
+(defun join (coll delm)
+  (reduce (lambda (res s)
+            (format nil "~A~A~A" res delm s))
+          coll))
+
 ;(defmethod help ((cmd command))
 ;  (let* ((name (get-name cmd))
 ;         (about (slot-value cmd 'about))
@@ -164,20 +190,20 @@ OPTIONS:
 ;         (arguments (slot-value cmd 'arguments)))
 ;    (list
 ;      (format nil "~A ~A~%" name ver)
-;      (format nil "USAGE: ~A~A~A"
+;      (format nil "USAGE: ~A~A~A~A"
 ;              name
 ;              (if options " [OPTIONS]" "")
 ;              (if subcommands " [SUBCOMMAND]" "")
 ;              (if (and arguments (not subcommands))
-;                ;(format nil "~{~a~^.~}" (reverse subcmds))
-;                )
-;
-;
-;              )
+;                (format nil " ~A" (join (mapcar #'to-str  arguments) ", "))
+;                ""))
+;      (if subcommands
+;        (format nil "SUBCOMMANDS:")
+;        )
 ;      (if options
+;        (format nil "OPTIONS:")
 ;        )
 ;      )
-;
 ;    )
 ;  )
 

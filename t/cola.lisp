@@ -9,12 +9,22 @@
 
 (plan nil)
 
-;(ok (typep (cola:option :name "help" :short "h" :long "help" :help "print help") 'option))
-
 ; optionp
 (ok (cola:optionp "-h"))
 (ok (cola:optionp "--help"))
 (ok (not (cola:optionp "help")))
+
+;;; @option
+
+(subtest "@option"
+  (is (macroexpand-1 '(@option foo -f --foo +takes-value "bar"))
+      '(make-instance 'option :name "foo" :short "f" :long "foo" :takes-value t :help "bar"))
+  (is (macroexpand-1 '(@option foo -f --foo "bar"))
+      '(make-instance 'option :name "foo" :short "f" :long "foo" :help "bar"))
+  )
+;(let ((opt (@option foo -f --foo "bar")))
+;  (ok (equalp opt (make-instance 'option :name "foo" :short "f" :long "foo" :help "bar")))
+;  )
 
 ;;; parse-subcommand
 (let* ((cc (make-instance 'command :name "ccc"))
@@ -107,5 +117,7 @@
 ;;; argument help
 (let ((arg (make-instance 'argument :name "foo" :help "bar")))
   (is (cola:help arg) '("<FOO>" . "bar")))
+
+;;; command help
 
 (finalize)
