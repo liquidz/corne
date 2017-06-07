@@ -2,13 +2,13 @@
 (defpackage cola
   (:use
     :cl
-    :cola.util
     )
   (:export
     :option
     :command
     :@option
     :@arg
+    :@command
     :argument
     :optionp
     :parse-subcommand
@@ -47,19 +47,31 @@
    (options     :initform () :initarg :options)
    (arguments   :initform () :initarg :arguments)))
 
-;(defcommand
-;  :name "hello"
-;  :about "foo"
-;  :version "1.0"
-;  (subcommand
-;    :name "bar"
-;    :about "baz"
-;    (option "help" -h --help "this is help"
-;      )
-;    )
-;  )
+;;; (@command name
+;;;   :about "aaa"
+;;;   :version "1.0"
+;;;   (@command sub ...)
+;;;   (@option ...) (@option ...)
+;;;   (@arg ...) (@arg ...))
+(defmacro @command (name &rest args)
+  (let* ((name (string-downcase (symbol-name name)))
+         (keys (loop for x in args while (not (listp x)) collect x))
+         (lists (loop for x in args when (listp x) collect x))
+         (subcommands (loop for x in lists when (eql '@command (car x)) collect x))
+         (options (loop for x in lists when (eql '@option (car x)) collect x))
+         (arguments (loop for x in lists when (eql '@arg (car x)) collect x)))
+    `(make-instance 'command ,@keys
+                    :name ,name
+                    :subcommands (list ,@subcommands)
+                    :options (list ,@options)
+                    :arguments (list ,@arguments))))
 
-; (@option name -h --help "Prints help information")
+#+nil (@command hello :about "aa" :version "1.0"
+          (@command foo (@option verbose -v "detail"))
+          (@option help -h --help "show help")
+          (@arg file "foo bar"))
+
+;;; (@option name -h --help +takes-value "Prints help information")
 (defmacro @option (name &rest args)
   (let* ((name (string-downcase (symbol-name name)))
          (syms (loop for x in args while (symbolp x) collect (symbol-name x)))
@@ -76,17 +88,11 @@
                     ,@(if takes-value (list :takes-value t))
                     :help ,help)))
 
+;;; (@arg name "this is help")
 (defmacro @arg (name &optional help)
   (let ((name (string-downcase (symbol-name name)))
         (help (if (and help (stringp help)) help "")))
     `(make-instance 'argument :name ,name :help ,help)))
-
-;(defclass argument (has-name)
-;  ((help :initform "" :initarg :help)))
-;(defun command (&rest args)
-;  (apply #'make-instance 'command args))
-;(defun option (&rest args)
-;  (apply #'make-instance 'option args))
 
 (defmethod find-command ((cmd command) (subcmd string))
   (let ((ls (slot-value cmd 'subcommands)))
@@ -228,4 +234,3 @@ OPTIONS:
         (values options subcommand args)
         )
       )))
-

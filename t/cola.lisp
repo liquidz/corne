@@ -36,6 +36,10 @@
   (is (macroexpand-1 '(@arg foo bar))
       '(make-instance 'argument :name "foo" :help "")))
 
+(subtest "@command"
+  (is 1 1)
+  )
+
 ;;; parse-subcommand
 (let* ((cc (make-instance 'command :name "ccc"))
        (bc (make-instance 'command :name "bbb" :subcommands (list cc)))
