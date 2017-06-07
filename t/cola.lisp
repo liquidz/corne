@@ -37,7 +37,8 @@
       '(make-instance 'argument :name "foo" :help "")))
 
 (subtest "@command"
-  (is 1 1)
+  (is (macroexpand-1 '(@command foo :about "bar" :version "1.0"))
+      '(make-instance 'command :name "foo" :about "bar" :version "1.0"))
   )
 
 ;;; parse-subcommand
