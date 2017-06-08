@@ -60,11 +60,12 @@
          (subcommands (loop for x in lists when (eql '@command (car x)) collect x))
          (options (loop for x in lists when (eql '@option (car x)) collect x))
          (arguments (loop for x in lists when (eql '@arg (car x)) collect x)))
-    `(make-instance 'command ,@keys
+    `(make-instance 'command
                     :name ,name
-                    :subcommands (list ,@subcommands)
-                    :options (list ,@options)
-                    :arguments (list ,@arguments))))
+                    ,@keys
+                    ,@(if subcommands (list :subcommands (cons 'list subcommands)))
+                    ,@(if options (list :options (cons 'list options)))
+                    ,@(if arguments (list :arguments (cons 'list arguments))))))
 
 #+nil (@command hello :about "aa" :version "1.0"
           (@command foo (@option verbose -v "detail"))
