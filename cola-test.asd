@@ -15,7 +15,10 @@
                :alexandria)
   :components ((:module "t"
                 :components
-                ((:test-file "cola"))))
+                ((:test-file "cola")
+                 (:test-file "argument")
+                 (:test-file "option")
+                )))
   :description "Test system for cola"
 
   :defsystem-depends-on (:prove-asdf)

@@ -9,33 +9,6 @@
 
 (plan nil)
 
-; optionp
-(ok (cola:optionp "-h"))
-(ok (cola:optionp "--help"))
-(ok (not (cola:optionp "help")))
-
-;;; @option
-
-(subtest "@option"
-  (is (macroexpand-1 '(@option foo -f --foo +takes-value "bar"))
-      '(make-instance 'option :name "foo" :short "f" :long "foo" :takes-value t :help "bar"))
-  (is (macroexpand-1 '(@option foo -f --foo "bar"))
-      '(make-instance 'option :name "foo" :short "f" :long "foo" :help "bar"))
-  (is (macroexpand-1 '(@option foo -f "bar"))
-      '(make-instance 'option :name "foo" :short "f" :help "bar"))
-  (is (macroexpand-1 '(@option foo --foo "bar"))
-      '(make-instance 'option :name "foo" :long "foo" :help "bar"))
-  (is (macroexpand-1 '(@option foo -f))
-      '(make-instance 'option :name "foo" :short "f" :help "")))
-
-(subtest "@arg"
-  (is (macroexpand-1 '(@arg foo "bar"))
-      '(make-instance 'argument :name "foo" :help "bar"))
-  (is (macroexpand-1 '(@arg foo))
-      '(make-instance 'argument :name "foo" :help ""))
-  (is (macroexpand-1 '(@arg foo bar))
-      '(make-instance 'argument :name "foo" :help "")))
-
 (subtest "@command"
   (is (macroexpand-1 '(@command foo :about "bar" :version "1.0"))
       '(make-instance 'command :name "foo" :about "bar" :version "1.0"))
@@ -129,17 +102,6 @@
 ;  (is-error (cola:parse cmd '("fewarg")) 'cola:argument-error)
 ;  (is-error (cola:parse cmd '("too" "much" "arg")) 'cola:argument-error))
 ;
-;;; option help
-;(let (
-;      (flg-opt (make-instance 'option :name "flag" :short "f" :long "flag" :help "foo"))
-;      (flg-opt-only-short (make-instance 'option :name "flag" :short "f" :help "foo"))
-;      (flg-opt-only-long (make-instance 'option :name "flag" :long "flag" :help "foo"))
-;      (val-opt (make-instance 'option :name "value" :short "v" :long "value" :takes-value t :help "bar"))
-;      )
-;  (is (cola:help flg-opt) '("-f, --flag" . "foo"))
-;  (is (cola:help flg-opt-only-short) '("-f" . "foo"))
-;  (is (cola:help flg-opt-only-long) '("--flag" . "foo"))
-;  (is (cola:help val-opt) '("-v, --value <VALUE>" . "bar")))
 ;
 ;;;; argument help
 ;(let ((arg (make-instance 'argument :name "foo" :help "bar")))

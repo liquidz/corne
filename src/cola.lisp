@@ -1,44 +1,37 @@
 (in-package :cl-user)
 (defpackage cola
-  (:use
-    :cl
-    )
+  (:use :cl)
+  (:import-from :cola.argument
+                :@arg
+                :argument
+                :argument-error
+                :to-str)
+  (:import-from :cola.option
+                :@option
+                :option
+                :option-error
+                :optionp
+                )
   (:export
     :option
     :command
-    :@option
     :@arg
+    :@option
     :@command
-    :argument
-    :optionp
     :parse-subcommand
+    :find-option
     :parse-option
     :parse-argument
     :parse
-    :option-error
-    :argument-error
     :help
     ))
 (in-package :cola)
 
 (defvar *delm* "    ")
 
-
-(defmacro aif (pred true-part &optional else-part)
-  `(let ((it ,pred))
-     (if it ,true-part ,else-part)))
-
 (defclass has-name ()
   ((name :initform "" :initarg :name :reader get-name)))
 
-(defclass option (has-name)
-  ((short       :initform () :initarg :short)
-   (long        :initform () :initarg :long)
-   (help        :initform "" :initarg :help)
-   (takes-value :initform () :initarg :takes-value)))
-
-(defclass argument (has-name)
-  ((help :initform "" :initarg :help)))
 
 (defclass command (has-name)
   ((about       :initform "" :initarg :about)
@@ -72,45 +65,13 @@
           (@option help -h --help "show help")
           (@arg file "foo bar"))
 
-;;; (@option name -h --help +takes-value "Prints help information")
-(defmacro @option (name &rest args)
-  (let* ((name (string-downcase (symbol-name name)))
-         (syms (loop for x in args while (symbolp x) collect (symbol-name x)))
-         (options (loop for x in syms while (optionp x)
-                        collect (string-downcase x)))
-         (short (find-if (lambda (opt) (= 1 (mismatch opt "--"))) options))
-         (long (find-if (lambda (opt) (= 2 (mismatch opt "--"))) options))
-         (takes-value (position "+TAKES-VALUE" syms :test #'equal))
-         (help (or (find-if #'stringp args) "")))
-    `(make-instance 'option
-                    :name ,name
-                    ,@(if short (list :short (subseq short 1)))
-                    ,@(if long (list :long (subseq long 2)))
-                    ,@(if takes-value (list :takes-value t))
-                    :help ,help)))
-
-;;; (@arg name "this is help")
-(defmacro @arg (name &optional help)
-  (let ((name (string-downcase (symbol-name name)))
-        (help (if (and help (stringp help)) help "")))
-    `(make-instance 'argument :name ,name :help ,help)))
-
-(defmethod find-command ((cmd command) (subcmd string))
-  (let ((ls (slot-value cmd 'subcommands)))
-    (find subcmd ls :key #'get-name :test #'equal)))
-
-(defmethod equivalent ((s string) (opt option))
-  (let ((short (format () "-~A"  (slot-value opt 'short)))
-        (long  (format () "--~A" (slot-value opt 'long))))
-    (or (equal s short)
-        (equal s long))))
-
 (defmethod find-option ((cmd command) (opt string))
   (let ((ls (slot-value cmd 'options)))
     (find opt ls :test #'equivalent)))
 
-(defun optionp (s)
-  (position #\- s))
+(defmethod find-command ((cmd command) (subcmd string))
+  (let ((ls (slot-value cmd 'subcommands)))
+    (find subcmd ls :key #'get-name :test #'equal)))
 
 (defmethod parse-subcommand ((cmd command) args &optional subcmds)
   (let* ((arg (first args))
@@ -140,51 +101,8 @@
         (values (subseq user-args 0 args-len) () (subseq user-args args-len))
         (values user-args (subseq args user-args-len) ())))))
 
-(defmethod to-str ((arg argument))
-  (format nil "<~A>" (string-upcase (get-name arg))))
 
-(define-condition option-error (simple-error)
-  ((option :initarg :option :reader option-error-option))
-  (:report (lambda (c s)
-             (format s "Invalid option: ~A" (option-error-option c)))))
 
-(define-condition argument-error (simple-error)
-  ;; ARGUMENTS shoud be list of string
-  ;; REASON shoud be string
-  ((arguments :initarg :arguments :reader argument-error-arguments)
-   (reason :initarg :reason :reader argument-error-reason))
-  (:report (lambda (c s)
-            (format s "Invalid arguments: ~S, reason: ~A"
-                    (argument-error-arguments c) (argument-error-reason c)))))
-
-#|
-FLAGS:
-    -h, --help             Prints help information
-    -V, --version          Prints version information
-
-OPTIONS:
-    -r, --rule <FILE>    rule TOML file
-|#
-(defmethod help ((opt option))
-  (let ((s (slot-value opt 'short))
-        (l (slot-value opt 'long))
-        (ret (cons "" (slot-value opt 'help))))
-    (cond
-      ((and s l)
-       (setf (car ret) (format nil "-~A, --~A" s l)))
-      (s
-        (setf (car ret) (format nil "-~A" s)))
-      (l
-        (setf (car ret) (format nil "--~A" l))))
-    (when (slot-value opt 'takes-value)
-      (setf (car ret) (format nil "~A <VALUE>" (car ret))))
-    ret))
-
-(defmethod help ((arg argument))
-  (let ((name (get-name arg))
-        (help (slot-value arg 'help)))
-    (cons (format nil "<~A>" (string-upcase name))
-          help)))
 
 (defun join (coll delm)
   (reduce (lambda (res s)
