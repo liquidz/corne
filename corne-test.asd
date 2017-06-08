@@ -1,25 +1,25 @@
 #|
-  This file is a part of cola project.
+  This file is a part of corne project.
 |#
 
 (in-package :cl-user)
-(defpackage cola-test-asd
+(defpackage corne-test-asd
   (:use :cl :asdf))
-(in-package :cola-test-asd)
+(in-package :corne-test-asd)
 
-(defsystem cola-test
+(defsystem corne-test
   :author ""
   :license ""
-  :depends-on (:cola
+  :depends-on (:corne
                :prove
                :alexandria)
   :components ((:module "t"
                 :components
-                ((:test-file "cola")
+                ((:test-file "corne")
                  (:test-file "argument")
                  (:test-file "option")
                 )))
-  :description "Test system for cola"
+  :description "Test system for corne"
 
   :defsystem-depends-on (:prove-asdf)
   :perform (test-op :after (op c)

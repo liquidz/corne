@@ -1,12 +1,12 @@
 (in-package :cl-user)
-(defpackage cola
+(defpackage corne
   (:use :cl)
-  (:import-from :cola.argument
+  (:import-from :corne.argument
                 :@arg
                 :argument
                 :argument-error
                 :to-str)
-  (:import-from :cola.option
+  (:import-from :corne.option
                 :@option
                 :option
                 :option-error
@@ -25,7 +25,7 @@
     :parse
     :help
     ))
-(in-package :cola)
+(in-package :corne)
 
 (defvar *delm* "    ")
 

@@ -1,11 +1,11 @@
 (in-package :cl-user)
-(defpackage cola-test.argument
+(defpackage corne-test.argument
   (:use :cl
-        :cola.argument
+        :corne.argument
         :prove))
-(in-package :cola-test.argument)
+(in-package :corne-test.argument)
 
-;; NOTE: To run this test file, execute `(asdf:test-system :cola)' in your Lisp.
+;; NOTE: To run this test file, execute `(asdf:test-system :corne)' in your Lisp.
 
 (plan 2)
 

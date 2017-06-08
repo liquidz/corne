@@ -1,9 +1,9 @@
 (in-package :cl-user)
-(defpackage cola-test.option
+(defpackage corne-test.option
   (:use :cl
-        :cola.option
+        :corne.option
         :prove))
-(in-package :cola-test.option)
+(in-package :corne-test.option)
 
 (plan 3)
 

@@ -1,5 +1,5 @@
 (in-package :cl-user)
-(defpackage cola.option
+(defpackage corne.option
   (:use :cl)
   (:export :option
            :@option
@@ -9,7 +9,7 @@
            :optionp
            :help))
 
-(in-package :cola.option)
+(in-package :corne.option)
 
 (defclass option ()
   ((name        :initform "" :initarg :name :reader get-name)

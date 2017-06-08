@@ -1,11 +1,11 @@
 (in-package :cl-user)
-(defpackage cola-test
+(defpackage corne-test
   (:use :cl
-        :cola
+        :corne
         :prove))
-(in-package :cola-test)
+(in-package :corne-test)
 
-;; NOTE: To run this test file, execute `(asdf:test-system :cola)' in your Lisp.
+;; NOTE: To run this test file, execute `(asdf:test-system :corne)' in your Lisp.
 
 (plan nil)
 
@@ -31,13 +31,13 @@
 ;       (bc (make-instance 'command :name "bbb" :subcommands (list cc)))
 ;       (ac (make-instance 'command :name "aaa" :subcommands (list bc))))
 ;  (is-values
-;    (cola:parse-subcommand ac '("bbb" "ccc"))
+;    (corne:parse-subcommand ac '("bbb" "ccc"))
 ;    (list cc '() "bbb.ccc"))
 ;  (is-values
-;    (cola:parse-subcommand ac '("bbb" "ddd"))
+;    (corne:parse-subcommand ac '("bbb" "ddd"))
 ;    (list bc '("ddd") "bbb"))
 ;  (is-values
-;    (cola:parse-subcommand ac '("ddd"))
+;    (corne:parse-subcommand ac '("ddd"))
 ;    (list ac '("ddd") nil)))
 ;
 ;;;; parse-option
@@ -45,17 +45,17 @@
 ;       (fo (make-instance 'option :name "file" :short "f" :long "file" :takes-value t))
 ;       (cmd (make-instance 'command :name "aaa" :options (list ho fo))))
 ;  (is-values
-;    (cola:parse-option cmd '("-h" "aaa"))
+;    (corne:parse-option cmd '("-h" "aaa"))
 ;    (list '("aaa") '(("help" . t))))
 ;  (is-values
-;    (cola:parse-option cmd '("-f" "aaa" "bbb"))
+;    (corne:parse-option cmd '("-f" "aaa" "bbb"))
 ;    (list '("bbb") '(("file" . "aaa"))))
 ;  (is-values
-;    (cola:parse-option cmd '("-h" "-f" "aaa" "bbb"))
+;    (corne:parse-option cmd '("-h" "-f" "aaa" "bbb"))
 ;    (list '("bbb") '(("help" . t)
 ;                         ("file" . "aaa"))))
 ;  (is-values
-;    (cola:parse-option cmd '("-x" "aaa"))
+;    (corne:parse-option cmd '("-x" "aaa"))
 ;    (list '("-x" "aaa") '())))
 ;
 ;;; parse-argument
@@ -94,18 +94,18 @@
 ;              :subcommands (list foo-cmd)
 ;              :options (list opt-h opt-f)
 ;              :arguments (list arg-a arg-b))))
-;  (is-values (cola:parse cmd '("foo" "-v" "bar"))
+;  (is-values (corne:parse cmd '("foo" "-v" "bar"))
 ;             (list '(("verbose" . t)) "foo" '("bar")))
-;  (is-values (cola:parse cmd '("arg1" "arg2"))
+;  (is-values (corne:parse cmd '("arg1" "arg2"))
 ;             (list nil nil '("arg1" "arg2")))
-;  (is-error (cola:parse cmd '("-x")) 'cola:option-error)
-;  (is-error (cola:parse cmd '("fewarg")) 'cola:argument-error)
-;  (is-error (cola:parse cmd '("too" "much" "arg")) 'cola:argument-error))
+;  (is-error (corne:parse cmd '("-x")) 'corne:option-error)
+;  (is-error (corne:parse cmd '("fewarg")) 'corne:argument-error)
+;  (is-error (corne:parse cmd '("too" "much" "arg")) 'corne:argument-error))
 ;
 ;
 ;;;; argument help
 ;(let ((arg (make-instance 'argument :name "foo" :help "bar")))
-;  (is (cola:help arg) '("<FOO>" . "bar")))
+;  (is (corne:help arg) '("<FOO>" . "bar")))
 ;
 ;;;; command help
 

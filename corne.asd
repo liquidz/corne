@@ -1,20 +1,20 @@
 #|
-  This file is a part of cola project.
+  This file is a part of corne project.
 |#
 
 (in-package :cl-user)
-(defpackage cola-asd
+(defpackage corne-asd
   (:use :cl :asdf))
-(in-package :cola-asd)
+(in-package :corne-asd)
 
-(defsystem cola
+(defsystem corne
   :version "0.1"
   :author ""
   :license ""
   :depends-on (:alexandria)
   :components ((:module "src"
                 :components
-                ((:file "cola" :depends-on ("argument" "option"))
+                ((:file "corne" :depends-on ("argument" "option"))
                  (:file "argument")
                  (:file "option"))))
   :description ""
@@ -30,4 +30,4 @@
                                :fill-pointer t)))
           (setf (fill-pointer seq) (read-sequence seq stream))
           seq)))
-  :in-order-to ((test-op (test-op cola-test))))
+  :in-order-to ((test-op (test-op corne-test))))
