@@ -14,7 +14,8 @@
   :depends-on (:alexandria)
   :components ((:module "src"
                 :components
-                ((:file "corne" :depends-on ("argument" "option"))
+                ((:file "corne" :depends-on ("command"))
+                 (:file "command" :depends-on ("argument" "option"))
                  (:file "argument")
                  (:file "option"))))
   :description ""

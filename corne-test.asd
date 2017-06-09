@@ -16,6 +16,7 @@
   :components ((:module "t"
                 :components
                 ((:test-file "corne")
+                 (:test-file "command")
                  (:test-file "argument")
                  (:test-file "option")
                 )))
