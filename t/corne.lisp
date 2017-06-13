@@ -43,9 +43,6 @@
 ;  (is-error (corne:parse cmd '("too" "much" "arg")) 'corne:argument-error))
 ;
 ;
-;;;; argument help
-;(let ((arg (make-instance 'argument :name "foo" :help "bar")))
-;  (is (corne:help arg) '("<FOO>" . "bar")))
 ;
 ;;;; command help
 

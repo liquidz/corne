@@ -5,19 +5,18 @@
         :prove))
 (in-package :corne-test.argument)
 
-;; NOTE: To run this test file, execute `(asdf:test-system :corne)' in your Lisp.
-
 (plan 2)
 
-(subtest "@arg"
-  (is (macroexpand-1 '(@arg foo "bar"))
-      '(make-instance 'argument :name "foo" :help "bar"))
-  (is (macroexpand-1 '(@arg foo))
-      '(make-instance 'argument :name "foo" :help ""))
-  (is (macroexpand-1 '(@arg foo bar))
-      '(make-instance 'argument :name "foo" :help "")))
+;(subtest "@arg"
+;  (is (macroexpand-1 '(@arg foo "bar"))
+;      '(make-instance 'argument :name "foo" :help "bar"))
+;  (is (macroexpand-1 '(@arg foo))
+;      '(make-instance 'argument :name "foo" :help ""))
+;  (is (macroexpand-1 '(@arg foo bar))
+;      '(make-instance 'argument :name "foo" :help "")))
 
 (subtest "argument help"
-  (is (help (@arg foo "bar")) '("<FOO>" . "bar")))
+  (is (help (arg "foo")) '("<FOO>" . ""))
+  (is (help (arg "foo" :help "bar")) '("<FOO>" . "bar")))
 
 (finalize)

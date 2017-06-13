@@ -2,26 +2,25 @@
 (defpackage corne.command
   (:use :cl)
   (:import-from :corne.argument
-                :@arg
-                :argument
-                :argument-error
-                :to-str)
+                :arg
+                :argument-error)
   (:import-from :corne.option
-                :@option
-                :option
+                :equivalent
+                :opt
                 :option-error
-                :optionp)
+                :optionp
+                :takes-valuep)
   (:export
-    :commmand
-    :@command
-    :find-option
+    :arg
+    :cmd
     :find-command
-    :parse-subcommand
-    :parse-option
-    :parse-argument
+    :find-option
+    :get-name
+    :opt
     :parse
-    )
-  )
+    :parse-argument
+    :parse-option
+    :parse-subcommand))
 (in-package :corne.command)
 
 (defclass command ()
@@ -32,25 +31,8 @@
    (options     :initform () :initarg :options)
    (arguments   :initform () :initarg :arguments)))
 
-;;; (@command name
-;;;   :about "aaa"
-;;;   :version "1.0"
-;;;   (@command sub ...)
-;;;   (@option ...) (@option ...)
-;;;   (@arg ...) (@arg ...))
-(defmacro @command (name &rest args)
-  (let* ((name (string-downcase (symbol-name name)))
-         (keys (loop for x in args while (not (listp x)) collect x))
-         (lists (loop for x in args when (listp x) collect x))
-         (subcommands (loop for x in lists when (eql '@command (car x)) collect x))
-         (options (loop for x in lists when (equal "@OPTION" (symbol-name (car x))) collect x))
-         (arguments (loop for x in lists when (equal "@ARG" (symbol-name (car x))) collect x)))
-    `(make-instance 'command
-                    :name ,name
-                    ,@keys
-                    ,@(if subcommands (list :subcommands (cons 'list subcommands)))
-                    ,@(if options (list :options (cons 'list options)))
-                    ,@(if arguments (list :arguments (cons 'list arguments))))))
+(defun cmd (name &rest args)
+  (apply #'make-instance 'command :name name args))
 
 (defmethod find-option ((cmd command) (opt string))
   (let ((ls (slot-value cmd 'options)))
@@ -71,10 +53,10 @@
 (defmethod parse-option ((cmd command) args &optional opts)
   (let ((o (find-option cmd (first args))))
     (if o
-      (if (slot-value o 'takes-value)
+      (if (takes-valuep o)
         (parse-option cmd (cddr args)
-                      (cons (cons (get-name o) (second args)) opts))
-        (parse-option cmd (cdr args) (cons (cons (get-name o) t) opts)))
+                      (cons (cons (corne.option::get-name o) (second args)) opts))
+        (parse-option cmd (cdr args) (cons (cons (corne.option::get-name o) t) opts)))
       (values args (reverse opts)))))
 
 (defmethod parse-argument ((cmd command) user-args)
@@ -97,12 +79,10 @@
           (error 'option-error :option (first valid-args)))
         (when missing-args
           (error 'argument-error
-                 :arguments (mapcar #'get-name missing-args)
+                 :arguments (mapcar #'corne.argument::get-name missing-args)
                  :reason "missing arguments"))
         (when too-much-args
           (error 'argument-error
                  :arguments too-much-args
                  :reason "too much arguments"))
-        (values options subcommand args)
-        )
-      )))
+        (values options subcommand args)))))

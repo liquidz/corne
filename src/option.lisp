@@ -1,13 +1,14 @@
 (in-package :cl-user)
 (defpackage corne.option
   (:use :cl)
-  (:export :option
-           :@option
-           :equivalent
-           :find-option
-           :option-error
-           :optionp
-           :help))
+  (:export
+    :get-name
+    :equivalent
+    :help
+    :opt
+    :option-error
+    :optionp
+    :takes-valuep))
 
 (in-package :corne.option)
 
@@ -16,24 +17,10 @@
    (short       :initform () :initarg :short)
    (long        :initform () :initarg :long)
    (help        :initform "" :initarg :help)
-   (takes-value :initform () :initarg :takes-value)))
+   (takes-value :initform () :initarg :takes-value :reader takes-valuep)))
 
-;;; (@option name -h --help +takes-value "Prints help information")
-(defmacro @option (name &rest args)
-  (let* ((name (string-downcase (symbol-name name)))
-         (syms (loop for x in args while (symbolp x) collect (symbol-name x)))
-         (options (loop for x in syms while (optionp x)
-                        collect (string-downcase x)))
-         (short (find-if (lambda (opt) (= 1 (mismatch opt "--"))) options))
-         (long (find-if (lambda (opt) (= 2 (mismatch opt "--"))) options))
-         (takes-value (position "+TAKES-VALUE" syms :test #'equal))
-         (help (or (find-if #'stringp args) "")))
-    `(make-instance 'option
-                    :name ,name
-                    ,@(if short (list :short (subseq short 1)))
-                    ,@(if long (list :long (subseq long 2)))
-                    ,@(if takes-value (list :takes-value t))
-                    :help ,help)))
+(defun opt (name &rest args)
+  (apply #'make-instance 'option :name name args))
 
 (defmethod equivalent ((s string) (opt option))
   (let ((short (format () "-~A"  (slot-value opt 'short)))

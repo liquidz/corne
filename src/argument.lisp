@@ -2,17 +2,23 @@
 (defpackage corne.argument
   (:use :cl)
   (:export
-    :@arg
-    :argument
+    ;:@arg
+    ;:argument
+    :arg
     :argument-error
+    :get-name
+    :help
     :to-str
-    :help))
+    ))
 
 (in-package :corne.argument)
 
 (defclass argument ()
   ((name :initform "" :initarg :name :reader get-name)
    (help :initform "" :initarg :help)))
+
+(defun arg (name &rest args)
+  (apply #'make-instance 'argument :name name args))
 
 ;;; (@arg name "this is help")
 (defmacro @arg (name &optional help)
