@@ -65,7 +65,13 @@
                (list nil nil '("arg1" "arg2")))
     (is-error (parse cmd '("-x")) 'corne.option::option-error)
     (is-error (parse cmd '("fewarg")) 'corne.argument::argument-error)
-    (is-error (parse cmd '("too" "much" "arg")) 'corne.argument::argument-error))
-  )
+    (is-error (parse cmd '("too" "much" "arg")) 'corne.argument::argument-error)))
+
+(subtest "add-option!"
+  (let ((c (cmd "test")))
+    (add-option! c (opt "help" :short "h"))
+    (is-values
+      (parse-option c '("-h" "aaa"))
+      (list '("aaa") '(("help" . t))))))
 
 (finalize)

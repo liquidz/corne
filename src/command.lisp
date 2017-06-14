@@ -13,6 +13,7 @@
   (:export
     :arg
     :cmd
+    :add-option!
     :find-command
     :find-option
     :get-name
@@ -23,13 +24,15 @@
     :parse-subcommand))
 (in-package :corne.command)
 
+(defvar *delm* "    ")
+
 (defclass command ()
   ((name        :initform "" :initarg :name :reader get-name)
-   (about       :initform "" :initarg :about)
+   (about       :initform nil :initarg :about)
    (version     :initform "" :initarg :version)
-   (subcommands :initform () :initarg :subcommands)
-   (options     :initform () :initarg :options)
-   (arguments   :initform () :initarg :arguments)))
+   (subcommands :initform nil :initarg :subcommands)
+   (options     :initform nil :initarg :options)
+   (arguments   :initform nil :initarg :arguments)))
 
 (defun cmd (name &rest args)
   (apply #'make-instance 'command :name name args))
@@ -86,3 +89,65 @@
                  :arguments too-much-args
                  :reason "too much arguments"))
         (values options subcommand args)))))
+
+(defmethod add-option! ((cmd command) option)
+  (let ((options (slot-value cmd 'options)))
+    (setf (slot-value cmd 'options) (append options (list option)))))
+
+(defun _join (coll &optional (delm ""))
+  (reduce (lambda (res s)
+            (format nil "~A~A~A" res delm s))
+          coll))
+
+(defun _repeat (x n)
+  (loop for _ from 0 below n collect x))
+
+(defun _align-cons (coll &key (space (length *delm*)) (delm " "))
+  (let* ((car-max-len (apply #'max (loop for x in coll collect (length (car x)))))
+         (delm-len (+ space car-max-len))
+         (gen-delm (lambda (x) (_join (_repeat delm (- delm-len (length x))))))
+         )
+    (mapcar (lambda (x)
+           (format nil "~A~A~A" (car x) (funcall gen-delm (car x)) (cdr x))
+           ) coll)))
+
+(defmethod usage ((cmd command))
+  (let* ((name (get-name cmd))
+         (subcommands (slot-value cmd 'subcommands))
+         (options (slot-value cmd 'options))
+         (arguments (slot-value cmd 'arguments)))
+    (format nil "USAGE: ~A~A~A~A"
+            name
+            (if options " [OPTIONS]" "")
+            (if subcommands " [SUBCOMMAND]" "")
+            (if (and arguments (not subcommands))
+              (format nil " ~A" (_join (mapcar #'corne.argument::to-str  arguments) " "))
+              ""))))
+
+(defmethod help ((cmd command))
+  (let* ((name (get-name cmd))
+         (about (slot-value cmd 'about))
+         (version (slot-value cmd 'version))
+         (subcommands (slot-value cmd 'subcommands))
+         (options (slot-value cmd 'options))
+         (arguments (slot-value cmd 'arguments)))
+    (with-output-to-string (s)
+      (format s "~A ~A~%" name version)
+      (when about
+        (format s "~A~%" about))
+      (format s "~%~A~%" (usage cmd))
+      (when subcommands
+        (format s "~%SUBCOMMANDS:~%")
+        ;(mapcar (lambda (c)
+        ;          (cons (get-name c) (slot-value c 'about))
+        ;          ) subcommands)
+        (loop for c in subcommands
+              do (format s "~A~A~%" *delm* (get-name c))))
+      (when options
+        (format s "~%OPTIONS:~%")
+          (loop for x in (_align-cons (mapcar #'corne.option::help options))
+                do (format s "~A~A~%" *delm* x)))
+      (when (and arguments (not subcommands))
+        (format s "~%ARGUMENTS:~%")
+        (loop for x in (_align-cons (mapcar #'corne.argument::help arguments))
+              do (format s "~A~A~%" *delm* x))))))

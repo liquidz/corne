@@ -1,61 +1,46 @@
 (in-package :cl-user)
 (defpackage corne
   (:use :cl)
-  (:import-from :corne.argument
-                :arg
-                :argument-error
-                )
-  (:import-from :corne.option
+  (:import-from :corne.command
+                :cmd
                 :opt
+                :arg
+                :help
+                :add-option!
                 :option-error
-                )
+                :argument-error)
   (:export
-    ;:command
+    :cmd
     :opt
     :arg
-    ;:parse-subcommand
-    ;:find-option
-    ;:parse-option
-    ;:parse-argument
-    ;:parse
-    ;:help
+    :help
+    :option-error
+    :argument-error
     ))
 (in-package :corne)
 
-(defvar *delm* "    ")
+(defvar *default-help-option*
+  (opt "help" :short "h" :long "help" :help "Prints help information"))
 
+(defmacro defcommand (name &rest args)
+  `(let ((c (cmd ,name ,@args)))
+     (add-option! c *default-help-option*)
+     c))
 
+(let ((c (defcommand "foo"
+            :about "aa"
+            :subcommands (list (cmd "neko" :about "aaa"))
+            :options (list (opt "verbose" :short "v" :long "verbose" :help "vvvvv")))))
+  (help c)
+  )
 
-
-
-(defun join (coll delm)
-  (reduce (lambda (res s)
-            (format nil "~A~A~A" res delm s))
-          coll))
-
-;(defmethod help ((cmd command))
-;  (let* ((name (get-name cmd))
-;         (about (slot-value cmd 'about))
-;         (version (slot-value cmd 'version))
-;         (subcommands (slot-value cmd 'subcommands))
-;         (options (slot-value cmd 'options))
-;         (arguments (slot-value cmd 'arguments)))
-;    (list
-;      (format nil "~A ~A~%" name ver)
-;      (format nil "USAGE: ~A~A~A~A"
-;              name
-;              (if options " [OPTIONS]" "")
-;              (if subcommands " [SUBCOMMAND]" "")
-;              (if (and arguments (not subcommands))
-;                (format nil " ~A" (join (mapcar #'to-str  arguments) ", "))
-;                ""))
-;      (if subcommands
-;        (format nil "SUBCOMMANDS:")
-;        )
-;      (if options
-;        (format nil "OPTIONS:")
-;        )
-;      )
-;    )
+;(let ((c (cmd "foo" :options (list (opt "verbose" :short "v" :help "bar")))))
+;  (format t "~A~%" c)
 ;  )
+
+;(defmacro defcommand ()
+;  )
+
+
+
 
