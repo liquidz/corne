@@ -2,45 +2,45 @@
 (defpackage corne
   (:use :cl)
   (:import-from :corne.command
-                :cmd
-                :opt
+                :*add-help-automatically*
+                :*default-help-option*
+                :*delm*
                 :arg
+                ;:argument-error
+                :cmd
                 :help
-                :add-option!
-                :option-error
-                :argument-error)
+                :opt
+                :parse
+                ;:option-error
+                )
+  (:import-from :corne.result
+                :get-subcommand
+                :get-option
+                :get-arg
+                )
   (:export
-    :cmd
-    :opt
+    :*add-help-automatically*
+    :*default-help-option*
+    :*delm*
     :arg
+    ;:argument-error
+    :cmd
     :help
-    :option-error
-    :argument-error
+    :opt
+    :parse
+    ;:option-error
+
+    :get-subcommand
+    :get-option
+    :get-arg
     ))
 (in-package :corne)
 
-(defvar *default-help-option*
-  (opt "help" :short "h" :long "help" :help "Prints help information"))
-
-(defmacro defcommand (name &rest args)
-  `(let ((c (cmd ,name ,@args)))
-     (add-option! c *default-help-option*)
-     c))
-
-(let ((c (defcommand "foo"
-            :about "aa"
-            :subcommands (list (cmd "neko" :about "aaa"))
-            :options (list (opt "verbose" :short "v" :long "verbose" :help "vvvvv")))))
-  (help c)
-  )
-
-;(let ((c (cmd "foo" :options (list (opt "verbose" :short "v" :help "bar")))))
-;  (format t "~A~%" c)
+;(defun parse2 (cmd argv &key ((auto-help t)))
+;  (let ((res (parse cmd argv)))
+;    (if (get-option res "help")
+;      (help cmd)
+;      )
+;    res
+;    )
 ;  )
-
-;(defmacro defcommand ()
-;  )
-
-
-
-

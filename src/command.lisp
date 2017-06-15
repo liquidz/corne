@@ -5,11 +5,13 @@
                 :arg
                 :argument-error)
   (:import-from :corne.option
-                :equivalent
                 :opt
                 :option-error
                 :optionp
                 :takes-valuep)
+  (:import-from :corne.result
+                :parse-result
+                )
   (:export
     :arg
     :cmd
@@ -21,25 +23,32 @@
     :parse
     :parse-argument
     :parse-option
-    :parse-subcommand))
+    :parse-subcommand
+    :*delm*
+    :*add-help-automatically*
+    :*default-help-option*))
 (in-package :corne.command)
 
 (defvar *delm* "    ")
+(defvar *add-help-automatically* t)
+(defvar *default-help-option*
+  (opt "help" :short "h" :long "help" :help "Prints help information"))
 
 (defclass command ()
-  ((name        :initform "" :initarg :name :reader get-name)
+  ((name        :initform ""  :initarg :name :reader get-name)
    (about       :initform nil :initarg :about)
-   (version     :initform "" :initarg :version)
+   (version     :initform ""  :initarg :version)
    (subcommands :initform nil :initarg :subcommands)
    (options     :initform nil :initarg :options)
    (arguments   :initform nil :initarg :arguments)))
 
-(defun cmd (name &rest args)
-  (apply #'make-instance 'command :name name args))
+(defmethod add-option! ((cmd command) option)
+  (let ((options (slot-value cmd 'options)))
+    (setf (slot-value cmd 'options) (append options (list option)))))
 
 (defmethod find-option ((cmd command) (opt string))
   (let ((ls (slot-value cmd 'options)))
-    (find opt ls :test #'equivalent)))
+    (find opt ls :test #'corne.option::equivalent)))
 
 (defmethod find-command ((cmd command) (subcmd string))
   (let ((ls (slot-value cmd 'subcommands)))
@@ -54,45 +63,57 @@
               (and subcmds (format nil "~{~a~^.~}" (reverse subcmds)))))))
 
 (defmethod parse-option ((cmd command) args &optional opts)
-  (let ((o (find-option cmd (first args))))
+  (let* ((arg (first args))
+         (o   (and arg (find-option cmd arg))))
     (if o
       (if (takes-valuep o)
         (parse-option cmd (cddr args)
                       (cons (cons (corne.option::get-name o) (second args)) opts))
-        (parse-option cmd (cdr args) (cons (cons (corne.option::get-name o) t) opts)))
+        (parse-option cmd (cdr args) (cons (cons (corne.option::get-name o) t) opts))
+        )
       (values args (reverse opts)))))
+
+(defun _mapping-args (defined-args user-args)
+  (mapcar (lambda (da ua)
+            (cons (corne.argument::get-name da) ua))
+          defined-args user-args))
 
 (defmethod parse-argument ((cmd command) user-args)
   "returns (values VALID_USER_ARGS MISSING_ARGS TOO_MUCH_ARGS)"
-  (let* ((args (slot-value cmd 'arguments))
-         (args-len (length args))
+  (let* ((args          (slot-value cmd 'arguments))
+         (args-len      (length args))
          (user-args-len (length user-args)))
     (if (or (not args) (= args-len user-args-len))
-      (values user-args () ())
+      (values (_mapping-args args user-args) () ())
       (if (> user-args-len args-len)
-        (values (subseq user-args 0 args-len) () (subseq user-args args-len))
-        (values user-args (subseq args user-args-len) ())))))
+        (values (_mapping-args args (subseq user-args 0 args-len)) () (subseq user-args args-len))
+        (values (_mapping-args args user-args) (subseq args user-args-len) ())))))
 
 (defmethod parse ((cmd command) args)
   "return (values option subcommand rest-args)"
   (multiple-value-bind (cmd args subcommand) (parse-subcommand cmd args)
-    (multiple-value-bind (args options) (parse-option cmd args)
-      (multiple-value-bind (valid-args missing-args too-much-args) (parse-argument cmd args)
-        (when (optionp (first valid-args))
-          (error 'option-error :option (first valid-args)))
-        (when missing-args
-          (error 'argument-error
-                 :arguments (mapcar #'corne.argument::get-name missing-args)
-                 :reason "missing arguments"))
-        (when too-much-args
-          (error 'argument-error
-                 :arguments too-much-args
-                 :reason "too much arguments"))
-        (values options subcommand args)))))
+    (multiple-value-bind (args option) (parse-option cmd args)
+      (multiple-value-bind (valid-arg missing-arg too-many-arg) (parse-argument cmd args)
+        ;(when (optionp (first valid-args))
+        ;  (error 'option-error :option (first valid-args)))
+        ;(when missing-args
+        ;  (error 'argument-error
+        ;         :arguments (mapcar #'corne.argument::get-name missing-args)
+        ;         :reason "missing arguments"))
+        ;(when too-much-args
+        ;  (error 'argument-error
+        ;         :arguments too-much-args
+        ;         :reason "too much arguments"))
 
-(defmethod add-option! ((cmd command) option)
-  (let ((options (slot-value cmd 'options)))
-    (setf (slot-value cmd 'options) (append options (list option)))))
+        (make-instance 'parse-result
+                       :option option
+                       :command subcommand
+                       :valid-arg valid-arg
+                       :missing-arg missing-arg
+                       :too-many-arg too-many-arg)
+        ))))
+
+
 
 (defun _join (coll &optional (delm ""))
   (reduce (lambda (res s)
@@ -104,18 +125,17 @@
 
 (defun _align-cons (coll &key (space (length *delm*)) (delm " "))
   (let* ((car-max-len (apply #'max (loop for x in coll collect (length (car x)))))
-         (delm-len (+ space car-max-len))
-         (gen-delm (lambda (x) (_join (_repeat delm (- delm-len (length x))))))
-         )
+         (delm-len    (+ space car-max-len))
+         (gen-delm    (lambda (x) (_join (_repeat delm (- delm-len (length x)))))))
     (mapcar (lambda (x)
            (format nil "~A~A~A" (car x) (funcall gen-delm (car x)) (cdr x))
            ) coll)))
 
 (defmethod usage ((cmd command))
-  (let* ((name (get-name cmd))
+  (let* ((name        (get-name cmd))
          (subcommands (slot-value cmd 'subcommands))
-         (options (slot-value cmd 'options))
-         (arguments (slot-value cmd 'arguments)))
+         (options     (slot-value cmd 'options))
+         (arguments   (slot-value cmd 'arguments)))
     (format nil "USAGE: ~A~A~A~A"
             name
             (if options " [OPTIONS]" "")
@@ -125,12 +145,12 @@
               ""))))
 
 (defmethod help ((cmd command))
-  (let* ((name (get-name cmd))
-         (about (slot-value cmd 'about))
-         (version (slot-value cmd 'version))
+  (let* ((name        (get-name cmd))
+         (about       (slot-value cmd 'about))
+         (version     (slot-value cmd 'version))
          (subcommands (slot-value cmd 'subcommands))
-         (options (slot-value cmd 'options))
-         (arguments (slot-value cmd 'arguments)))
+         (options     (slot-value cmd 'options))
+         (arguments   (slot-value cmd 'arguments)))
     (with-output-to-string (s)
       (format s "~A ~A~%" name version)
       (when about
@@ -151,3 +171,9 @@
         (format s "~%ARGUMENTS:~%")
         (loop for x in (_align-cons (mapcar #'corne.argument::help arguments))
               do (format s "~A~A~%" *delm* x))))))
+
+(defun cmd (name &rest args)
+  (let ((c (apply #'make-instance 'command :name name args)))
+    (when (and *add-help-automatically* (not (find-option c "--help")))
+      (add-option! c *default-help-option*))
+    c))

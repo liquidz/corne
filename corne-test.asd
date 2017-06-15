@@ -15,11 +15,12 @@
                :alexandria)
   :components ((:module "t"
                 :components
-                ((:test-file "corne")
+                ((:file "util")
+                 (:test-file "corne")
                  (:test-file "command")
                  (:test-file "argument")
                  (:test-file "option")
-                )))
+                 (:test-file "result"))))
   :description "Test system for corne"
 
   :defsystem-depends-on (:prove-asdf)

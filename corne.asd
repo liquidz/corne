@@ -11,13 +11,14 @@
   :version "0.1"
   :author ""
   :license ""
-  :depends-on (:alexandria)
+  :depends-on ()
   :components ((:module "src"
                 :components
-                ((:file "corne" :depends-on ("command"))
-                 (:file "command" :depends-on ("argument" "option"))
+                ((:file "corne"   :depends-on ("command" "result"))
+                 (:file "command" :depends-on ("argument" "option" "result"))
                  (:file "argument")
-                 (:file "option"))))
+                 (:file "option")
+                 (:file "result"))))
   :description ""
   :long-description
   #.(with-open-file (stream (merge-pathnames

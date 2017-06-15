@@ -2,8 +2,6 @@
 (defpackage corne.argument
   (:use :cl)
   (:export
-    ;:@arg
-    ;:argument
     :arg
     :argument-error
     :get-name
