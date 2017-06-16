@@ -10,8 +10,10 @@
                 :optionp
                 :takes-valuep)
   (:import-from :corne.result
-                :parse-result
-                )
+                :parse-result)
+  (:import-from :corne.util
+                :join
+                :align-cons)
   (:export
     :arg
     :cmd
@@ -110,26 +112,9 @@
                        :command subcommand
                        :valid-arg valid-arg
                        :missing-arg missing-arg
-                       :too-many-arg too-many-arg)
+                       :too-many-arg too-many-arg
+                       :help (help cmd))
         ))))
-
-
-
-(defun _join (coll &optional (delm ""))
-  (reduce (lambda (res s)
-            (format nil "~A~A~A" res delm s))
-          coll))
-
-(defun _repeat (x n)
-  (loop for _ from 0 below n collect x))
-
-(defun _align-cons (coll &key (space (length *delm*)) (delm " "))
-  (let* ((car-max-len (apply #'max (loop for x in coll collect (length (car x)))))
-         (delm-len    (+ space car-max-len))
-         (gen-delm    (lambda (x) (_join (_repeat delm (- delm-len (length x)))))))
-    (mapcar (lambda (x)
-           (format nil "~A~A~A" (car x) (funcall gen-delm (car x)) (cdr x))
-           ) coll)))
 
 (defmethod usage ((cmd command))
   (let* ((name        (get-name cmd))
@@ -141,7 +126,7 @@
             (if options " [OPTIONS]" "")
             (if subcommands " [SUBCOMMAND]" "")
             (if (and arguments (not subcommands))
-              (format nil " ~A" (_join (mapcar #'corne.argument::to-str  arguments) " "))
+              (format nil " ~A" (join (mapcar #'corne.argument::to-str  arguments) " "))
               ""))))
 
 (defmethod help ((cmd command))
@@ -165,11 +150,11 @@
               do (format s "~A~A~%" *delm* (get-name c))))
       (when options
         (format s "~%OPTIONS:~%")
-          (loop for x in (_align-cons (mapcar #'corne.option::help options))
+          (loop for x in (align-cons (mapcar #'corne.option::help options))
                 do (format s "~A~A~%" *delm* x)))
       (when (and arguments (not subcommands))
         (format s "~%ARGUMENTS:~%")
-        (loop for x in (_align-cons (mapcar #'corne.argument::help arguments))
+        (loop for x in (align-cons (mapcar #'corne.argument::help arguments))
               do (format s "~A~A~%" *delm* x))))))
 
 (defun cmd (name &rest args)

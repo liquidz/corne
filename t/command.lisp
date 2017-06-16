@@ -3,7 +3,7 @@
   (:use :cl
         :corne.command
         :prove)
-  (:import-from :corne-test.util
+  (:import-from :corne-test.test-util
                 :binding)
   (:import-from :corne.result
                 :parse-result

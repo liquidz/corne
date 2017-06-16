@@ -17,6 +17,7 @@
                 :get-subcommand
                 :get-option
                 :get-arg
+                :get-help
                 )
   (:export
     :*add-help-automatically*
@@ -33,14 +34,24 @@
     :get-subcommand
     :get-option
     :get-arg
+
+    :parse2
     ))
 (in-package :corne)
 
-;(defun parse2 (cmd argv &key ((auto-help t)))
-;  (let ((res (parse cmd argv)))
-;    (if (get-option res "help")
-;      (help cmd)
-;      )
-;    res
-;    )
-;  )
+ (defun exit (&optional code)
+   #+sbcl (sb-ext:exit :code code)
+   #+ccl (ccl:quit)
+   #+ecl (si:quit)
+   #+abcl (cl-user::quit)
+   #+allegro (excl:exit code)
+   #+clisp (#+lisp=cl ext:quit #-lisp=cl lisp:quit code)
+   #+cmu (ext:quit code))
+
+(defun parse2 (cmd argv &key (auto-help t) (auto-error t))
+  (let ((res (parse cmd argv)))
+    (when (and auto-help (get-option res "help"))
+      (format t "~A" (get-help res))
+      (exit 0))
+    ;(when (and auto-error ()))
+    res))
