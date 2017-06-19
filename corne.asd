@@ -16,11 +16,10 @@
                 :components
                 ((:file "corne"   :depends-on ("command" "result"))
                  (:file "command" :depends-on ("argument" "option" "result" "util"))
-                 (:file "result"  :depends-on ("argument" "option"))
+                 (:file "result"  :depends-on ("argument" "option" "util"))
                  (:file "argument")
                  (:file "option")
-                 (:file "util"))
-                 )))
+                 (:file "util"))))
   :description ""
   :long-description
   #.(with-open-file (stream (merge-pathnames

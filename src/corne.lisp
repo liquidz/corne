@@ -18,6 +18,7 @@
                 :get-option
                 :get-arg
                 :get-help
+                :get-error
                 )
   (:export
     :*add-help-automatically*
@@ -53,5 +54,9 @@
     (when (and auto-help (get-option res "help"))
       (format t "~A" (get-help res))
       (exit 0))
-    ;(when (and auto-error ()))
+    (when (and auto-error (get-error res))
+      (loop for e in (get-error res)
+            do (format t "~A~%" e))
+      (exit 1)
+      )
     res))

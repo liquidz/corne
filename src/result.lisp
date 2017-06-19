@@ -1,6 +1,8 @@
 (in-package :cl-user)
 (defpackage corne.result
   (:use :cl)
+  (:import-from :corne.util
+                :join)
   ;(:import-from :corne.option
   ;              :optionp)
   (:export
@@ -9,7 +11,8 @@
     :get-subcommand
     :get-option
     :get-arg
-    :get-help))
+    :get-help
+    :get-error))
 
 (in-package :corne.result)
 
@@ -22,7 +25,7 @@
    (help         :initform nil :initarg :help :reader get-help)))
 
 (defmethod equivalent ((r1 parse-result) (r2 parse-result))
-  (let ((slots '(option command valid-arg missing-arg too-many-arg help)))
+  (let ((slots '(option command valid-arg missing-arg too-many-arg)))
     (equal
       (mapcar (lambda (s) (slot-value r1 s)) slots)
       (mapcar (lambda (s) (slot-value r2 s)) slots))))
@@ -41,33 +44,28 @@
   (let ((valid-arg (slot-value res 'valid-arg))
         (missing-arg (slot-value res 'missing-arg))
         (too-many-arg (slot-value res 'too-many-arg))
-        (errors nil)
-        )
+        (errors nil))
 
     (when (corne.option::optionp (first valid-arg))
-      (setf errors (append errors (format nil "Invalid option: ~A" (first valid-arg))))
-      )
+      (setf errors (cons (format nil "Invalid option: ~A" (first valid-arg)) errors)))
     
     (when missing-arg
+      (let ((args (join (mapcar #'corne.argument::get-name missing-arg) ", ")))
+        (setf errors (cons (format nil "Missing arguments: ~A" args) errors))))
 
-      ;(mapcar #'corne.argument::get-name missing-arg)
-      (setf errors (append errors (format nil "Missing arguments: ")))
-      )
+    (when too-many-arg
+      (let ((args (join too-many-arg ", ")))
+        (setf errors (cons (format nil "Too many arguments: ~A" args) errors))))
 
-    errors
-    ;(when missing-args
-    ;  (error 'argument-error
-    ;         :arguments (mapcar #'corne.argument::get-name missing-args)
-    ;         :reason "missing arguments"))
-    ;(when too-much-args
-    ;  (error 'argument-error
-    ;         :arguments too-much-args
-    ;         :reason "too much arguments"))
+    (reverse errors)))
 
-    )
-  )
-
-(let ((r (make-instance 'parse-result :valid-arg '("-a")))
+#|
+(let ((r (make-instance 'parse-result
+                        :valid-arg '("-a")
+                        :missing-arg (list (corne.argument::arg "foo") (corne.argument::arg "bar"))
+                        :too-many-arg '("nekt")
+                        ))
       )
   (get-error r)
   )
+|#

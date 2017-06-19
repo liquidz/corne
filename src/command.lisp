@@ -96,17 +96,6 @@
   (multiple-value-bind (cmd args subcommand) (parse-subcommand cmd args)
     (multiple-value-bind (args option) (parse-option cmd args)
       (multiple-value-bind (valid-arg missing-arg too-many-arg) (parse-argument cmd args)
-        ;(when (optionp (first valid-args))
-        ;  (error 'option-error :option (first valid-args)))
-        ;(when missing-args
-        ;  (error 'argument-error
-        ;         :arguments (mapcar #'corne.argument::get-name missing-args)
-        ;         :reason "missing arguments"))
-        ;(when too-much-args
-        ;  (error 'argument-error
-        ;         :arguments too-much-args
-        ;         :reason "too much arguments"))
-
         (make-instance 'parse-result
                        :option option
                        :command subcommand
