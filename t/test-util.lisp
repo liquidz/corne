@@ -1,7 +1,7 @@
 (in-package :cl-user)
-(defpackage corne-test.test-util
+(defpackage corne.test.util
   (:use :cl))
-(in-package :corne-test.test-util)
+(in-package :corne.test.util)
 
 (defmacro binding (binds &rest body)
   (let* ((syms (loop for _ in binds collect (gensym)))
