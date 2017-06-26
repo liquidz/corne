@@ -46,9 +46,9 @@
         (too-many-arg (slot-value res 'too-many-arg))
         (errors nil))
 
-    (when (corne.option::optionp (first valid-arg))
+    (when (and valid-arg (corne.option::optionp (cdar valid-arg)))
       (setf errors (cons (format nil "Invalid option: ~A" (first valid-arg)) errors)))
-    
+
     (when missing-arg
       (let ((args (join (mapcar #'corne.argument::get-name missing-arg) ", ")))
         (setf errors (cons (format nil "Missing arguments: ~A" args) errors))))

@@ -18,11 +18,25 @@
 (subtest "get-option"
   (let ((res (make-instance 'parse-result :option '(("foo" . "bar")))))
     (is (get-option res "foo") "bar")
+    (is (get-option res "bar") nil))
+  (let ((res (make-instance 'parse-result)))
+    (is (get-option res "foo") nil)
     (is (get-option res "bar") nil)))
 
 (subtest "get-arg"
   (let ((res (make-instance 'parse-result :valid-arg '(("foo" . "bar")))))
     (is (get-arg res "foo") "bar")
     (is (get-arg res "bar") nil)))
+
+(subtest "get-error"
+  (is (get-error (make-instance 'parse-result))
+      nil)
+  (is (get-error (make-instance 'parse-result :valid-arg '(("foo" . "bar"))))
+      nil)
+  (like (first (get-error (make-instance 'parse-result :valid-arg '(("help" . "-h")))))
+        "Invalid option: ")
+  ; TODO: missing-arg
+  ; TODO: too-many-arg
+  )
 
 (finalize)
