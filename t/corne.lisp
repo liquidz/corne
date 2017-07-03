@@ -9,6 +9,15 @@
 
 (plan nil)
 
+(subtest "command-case"
+  (is '(let ((it res))
+         (cond ((equal "a" (get-subcommand res)) "b")
+               ((equal "c" (get-subcommand res)) "d")))
+      (macroexpand-1 '(command-case res ("a" "b") ("c" "d"))))
+  (is '(let ((it res))
+         (cond ((equal "a" (get-subcommand res)) "b")
+               (t "d")))
+      (macroexpand-1 '(command-case res ("a" "b") (otherwise "d")))))
 
 ;
 ;;; parse

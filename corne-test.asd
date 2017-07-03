@@ -8,8 +8,8 @@
 (in-package :corne-test-asd)
 
 (defsystem corne-test
-  :author ""
-  :license ""
+  :author "Masashi Iizuka <liquidz.uo@gmail.com>"
+  :license "MIT"
   :depends-on (:corne
                :prove
                :alexandria)

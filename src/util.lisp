@@ -9,9 +9,10 @@
 (in-package :corne.util)
 
 (defun join (coll &optional (delm ""))
-  (reduce (lambda (res s)
-            (format nil "~A~A~A" res delm s))
-          coll))
+  (and coll
+       (reduce (lambda (res s)
+                 (format nil "~A~A~A" res delm s))
+               coll)))
 
 (defun repeat (x n)
   (loop for _ from 0 below n collect x))

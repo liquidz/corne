@@ -18,16 +18,16 @@
          (ac (cmd "aaa" :subcommands (list bc))))
     (is-values
       (parse-subcommand ac '("bbb" "ccc"))
-      (list cc nil "bbb.ccc"))
+      (list cc nil))
     (is-values
       (parse-subcommand ac '("bbb" "ddd"))
-      (list bc '("ddd") "bbb"))
+      (list bc '("ddd")))
     (is-values
       (parse-subcommand ac '("bbb"))
-      (list bc nil "bbb"))
+      (list bc nil))
     (is-values
       (parse-subcommand ac '("ddd"))
-      (list ac '("ddd") nil))))
+      (list ac '("ddd")))))
 
 (subtest "parse-option"
   (let* ((ho  (opt "help" :short "h" :long "help"))
@@ -83,9 +83,6 @@
     (ok (equivalent
           (parse cmd '("too" "many" "arg"))
           (make-instance 'parse-result :valid-arg '(("aaa" . "too") ("bbb" . "many")) :too-many-arg '("arg"))))
-    ;(is-error (parse cmd '("-x")) 'corne.option::option-error)
-    ;(is-error (parse cmd '("fewarg")) 'corne.argument::argument-error)
-    ;(is-error (parse cmd '("too" "much" "arg")) 'corne.argument::argument-error)
     ))
 
 (subtest "add-option!"
@@ -96,6 +93,10 @@
       (list '("aaa") '(("foo" . t))))))
 
 (subtest "cmd"
+  (let* ((child (cmd "baz"))
+         (parent (cmd "foo" :subcommands (list child))))
+    (is parent (get-parent child)))
+
   (is-values (parse-option (cmd "test") '("-h"))
              (list nil '(("help" . t))))
   (is-values (parse-option (cmd "test") '("--help"))

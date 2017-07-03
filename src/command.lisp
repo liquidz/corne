@@ -21,6 +21,7 @@
     :find-command
     :find-option
     :get-name
+    :get-parent
     :opt
     :parse
     :parse-argument
@@ -38,11 +39,12 @@
 
 (defclass command ()
   ((name        :initform ""  :initarg :name :reader get-name)
-   (about       :initform nil :initarg :about)
+   (help        :initform nil :initarg :help)
    (version     :initform ""  :initarg :version)
    (subcommands :initform nil :initarg :subcommands)
    (options     :initform nil :initarg :options)
-   (arguments   :initform nil :initarg :arguments)))
+   (arguments   :initform nil :initarg :arguments)
+   (parent      :initform nil :initarg :parent :reader get-parent)))
 
 (defmethod add-option! ((cmd command) option)
   (let ((options (slot-value cmd 'options)))
@@ -56,13 +58,12 @@
   (let ((ls (slot-value cmd 'subcommands)))
     (find subcmd ls :key #'get-name :test #'equal)))
 
-(defmethod parse-subcommand ((cmd command) args &optional subcmds)
+(defmethod parse-subcommand ((cmd command) args)
   (let* ((arg (first args))
          (c   (and arg (find-command cmd arg))))
     (if c
-      (parse-subcommand c (cdr args) (cons arg subcmds))
-      (values cmd args
-              (and subcmds (format nil "~{~a~^.~}" (reverse subcmds)))))))
+      (parse-subcommand c (cdr args))
+      (values cmd args))))
 
 (defmethod parse-option ((cmd command) args &optional opts)
   (let* ((arg (first args))
@@ -71,8 +72,7 @@
       (if (takes-valuep o)
         (parse-option cmd (cddr args)
                       (cons (cons (corne.option::get-name o) (second args)) opts))
-        (parse-option cmd (cdr args) (cons (cons (corne.option::get-name o) t) opts))
-        )
+        (parse-option cmd (cdr args) (cons (cons (corne.option::get-name o) t) opts)))
       (values args (reverse opts)))))
 
 (defun _mapping-args (defined-args user-args)
@@ -91,22 +91,28 @@
         (values (_mapping-args args (subseq user-args 0 args-len)) () (subseq user-args args-len))
         (values (_mapping-args args user-args) (subseq args user-args-len) ())))))
 
+(defmethod get-command-list ((cmd command))
+  (reverse
+    (loop for c = cmd
+          then (get-parent c)
+          while c
+          collect (get-name c))))
+
 (defmethod parse ((cmd command) args)
   "return (values option subcommand rest-args)"
-  (multiple-value-bind (cmd args subcommand) (parse-subcommand cmd args)
+  (multiple-value-bind (cmd args) (parse-subcommand cmd args)
     (multiple-value-bind (args option) (parse-option cmd args)
       (multiple-value-bind (valid-arg missing-arg too-many-arg) (parse-argument cmd args)
         (make-instance 'parse-result
                        :option option
-                       :command subcommand
+                       :command (join (cdr (get-command-list cmd)) ".")
                        :valid-arg valid-arg
                        :missing-arg missing-arg
                        :too-many-arg too-many-arg
-                       :help (help cmd))
-        ))))
+                       :help (help cmd))))))
 
 (defmethod usage ((cmd command))
-  (let* ((name        (get-name cmd))
+  (let* ((name (join (get-command-list cmd) " "))
          (subcommands (slot-value cmd 'subcommands))
          (options     (slot-value cmd 'options))
          (arguments   (slot-value cmd 'arguments)))
@@ -120,23 +126,21 @@
 
 (defmethod help ((cmd command))
   (let* ((name        (get-name cmd))
-         (about       (slot-value cmd 'about))
+         (help        (slot-value cmd 'help))
          (version     (slot-value cmd 'version))
          (subcommands (slot-value cmd 'subcommands))
          (options     (slot-value cmd 'options))
          (arguments   (slot-value cmd 'arguments)))
     (with-output-to-string (s)
       (format s "~A ~A~%" name version)
-      (when about
-        (format s "~A~%" about))
+      (when help
+        (format s "~A~%" help))
       (format s "~%~A~%" (usage cmd))
       (when subcommands
         (format s "~%SUBCOMMANDS:~%")
-        ;(mapcar (lambda (c)
-        ;          (cons (get-name c) (slot-value c 'about))
-        ;          ) subcommands)
-        (loop for c in subcommands
-              do (format s "~A~A~%" *delm* (get-name c))))
+        (loop for x in (align-cons (mapcar (lambda (c) (cons (get-name c) (slot-value c 'help)))
+                                           subcommands))
+              do (format s "~A~A~%" *delm* x)))
       (when options
         (format s "~%OPTIONS:~%")
           (loop for x in (align-cons (mapcar #'corne.option::help options))
@@ -148,6 +152,9 @@
 
 (defun cmd (name &rest args)
   (let ((c (apply #'make-instance 'command :name name args)))
+    ;; set parent command
+    (loop for sc in (slot-value c 'subcommands)
+          do (setf (slot-value sc 'parent) c))
     (when (and *add-help-automatically* (not (find-option c "--help")))
       (add-option! c *default-help-option*))
     c))

@@ -9,7 +9,8 @@
 
 (subtest "join"
   (is (join '("a" "b" "c")) "abc")
-  (is (join '("a" "b" "c") "-") "a-b-c"))
+  (is (join '("a" "b" "c") "-") "a-b-c")
+  (is nil (join nil)))
 
 (subtest "repeat"
   (is (repeat "a" 3) '("a" "a" "a")))

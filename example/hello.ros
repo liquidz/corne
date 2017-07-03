@@ -6,23 +6,21 @@ exec ros -Q -- $0 "$@"
 
 (progn ;;init forms
   (ros:ensure-asdf)
-  #+quicklisp (ql:quickload '(corne) :silent t)
-  )
+  #+quicklisp (ql:quickload '(corne) :silent t))
 ;
 (defpackage corne.example.hello
   (:use :cl
-        :corne
-        ))
+        :corne))
 (in-package :corne.example.hello)
 
 (defvar *cli*
   (cmd "hello"
-       :about "corne example command"
+       :help "corne example command"
        :version "1.0"
        :options (list (opt "verbose" :short "v" :long "verbose" :help ""))
        :arguments (list (arg "msg" :help "message"))))
 
 (defun main (&rest argv)
-  (let* ((res (parse2 *cli* argv)))
+  (let* ((res (parse *cli* argv)))
     (format t "hello ~A~%" (get-arg res "msg"))))
 ;;; vim: set ft=lisp lisp:

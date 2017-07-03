@@ -69,3 +69,4 @@
   (get-error r)
   )
 |#
+;(docparser:dump (swank:lookup-presented-object 19))
