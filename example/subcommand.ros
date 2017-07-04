@@ -26,5 +26,6 @@ exec ros -Q -- $0 "$@"
     ("foo"     (format t "foooooooo~%"))
     ("bar"     (format t "baaaaaaar~%"))
     ("bar.baz" (format t "baaaaaaaz~%"))
-    (otherwise (format t "~A~%" (get-help it)))))
+    (otherwise (format t "~A~%" (get-help it))
+               (uiop:quit 1))))
 ;;; vim: set ft=lisp lisp:

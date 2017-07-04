@@ -1,5 +1,5 @@
 (in-package :cl-user)
-(defpackage corne.argument
+(defpackage corne/src/argument
   (:use :cl)
   (:export
     :arg
@@ -9,7 +9,7 @@
     :to-str
     ))
 
-(in-package :corne.argument)
+(in-package :corne/src/argument)
 
 (defclass argument ()
   ((name :initform "" :initarg :name :reader get-name)

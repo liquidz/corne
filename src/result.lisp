@@ -1,9 +1,9 @@
 (in-package :cl-user)
-(defpackage corne.result
+(defpackage corne/src/result
   (:use :cl)
-  (:import-from :corne.util
+  (:import-from :corne/src/util
                 :join)
-  ;(:import-from :corne.option
+  ;(:import-from :corne/src/option
   ;              :optionp)
   (:export
     :parse-result
@@ -14,7 +14,7 @@
     :get-help
     :get-error))
 
-(in-package :corne.result)
+(in-package :corne/src/result)
 
 (defclass parse-result ()
   ((option       :initform nil :initarg :option)
@@ -46,11 +46,11 @@
         (too-many-arg (slot-value res 'too-many-arg))
         (errors nil))
 
-    (when (and valid-arg (corne.option::optionp (cdar valid-arg)))
+    (when (and valid-arg (corne/src/option:optionp (cdar valid-arg)))
       (setf errors (cons (format nil "Invalid option: ~A" (first valid-arg)) errors)))
 
     (when missing-arg
-      (let ((args (join (mapcar #'corne.argument::get-name missing-arg) ", ")))
+      (let ((args (join (mapcar #'corne/src/argument:get-name missing-arg) ", ")))
         (setf errors (cons (format nil "Missing arguments: ~A" args) errors))))
 
     (when too-many-arg
@@ -62,7 +62,7 @@
 #|
 (let ((r (make-instance 'parse-result
                         :valid-arg '("-a")
-                        :missing-arg (list (corne.argument::arg "foo") (corne.argument::arg "bar"))
+                        :missing-arg (list (corne/src/argument::arg "foo") (corne/src/argument::arg "bar"))
                         :too-many-arg '("nekt")
                         ))
       )

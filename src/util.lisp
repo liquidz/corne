@@ -1,12 +1,12 @@
 (in-package :cl-user)
-(defpackage corne.util
+(defpackage corne/src/util
   (:use :cl)
   (:export
     :join
     :repeat
     :align-cons))
 
-(in-package :corne.util)
+(in-package :corne/src/util)
 
 (defun join (coll &optional (delm ""))
   (and coll

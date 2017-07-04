@@ -1,7 +1,8 @@
 (in-package :cl-user)
 (defpackage corne
+  (:nicknames :corne/src/core)
   (:use :cl)
-  (:import-from :corne.command
+  (:import-from :corne/src/command
                 :*add-help-automatically*
                 :*default-help-option*
                 :*delm*
@@ -9,7 +10,7 @@
                 :cmd
                 :help
                 :opt)
-  (:import-from :corne.result
+  (:import-from :corne/src/result
                 :get-arg
                 :get-error
                 :get-help
@@ -31,34 +32,26 @@
     :parse))
 (in-package :corne)
 
-(defun exit (&optional code)
-  #+sbcl (sb-ext:exit :code code)
-  #+ccl (ccl:quit)
-  #+ecl (si:quit)
-  #+abcl (cl-user::quit)
-  #+allegro (excl:exit code)
-  #+clisp (#+lisp=cl ext:quit #-lisp=cl lisp:quit code)
-  #+cmu (ext:quit code))
-
 (defmacro command-case (parse-result &rest clauses)
   (let ((clauses (mapcar (lambda (x)
                            (if (eql 'otherwise (first x))
                              `(t ,@(rest x))
-                             `((equal ,(first x) (get-subcommand ,parse-result))
+                             `((equal ,(first x) (get-subcommand it))
                                ,@(rest x)))) clauses)))
     `(let ((it ,parse-result))
        (cond ,@clauses))))
 
 (defun parse (cmd argv &key (auto-help t) (auto-error t))
-  (let ((res (corne.command:parse cmd argv)))
+  (let ((res (corne/src/command:parse cmd argv)))
     (when (and auto-help (get-option res "help"))
       (format t "~A" (get-help res))
-      (exit 0))
+      (uiop:quit 0))
     (when (and auto-help (= 0 (length argv)))
       (format t "~A" (get-help res))
-      (exit 1))
+      (uiop:quit 1))
     (when (and auto-error (get-error res))
+      (format t "kiteru ~S~%" argv)
       (loop for e in (get-error res)
             do (format t "~A~%" e))
-      (exit 1))
+      (uiop:quit 1))
     res))
