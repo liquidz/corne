@@ -1,4 +1,5 @@
 # Corne
+[![Build Status](https://travis-ci.org/liquidz/corne.svg?branch=master)](https://travis-ci.org/liquidz/corne)
 
 Commandline argument parser for Common Lisp
 
