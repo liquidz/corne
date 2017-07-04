@@ -7,10 +7,10 @@
 
 (deftest command-case-test
   (ok (equal '(let ((it res))
-                (cond ((equal "a" (get-subcommand res)) "b")
-                      ((equal "c" (get-subcommand res)) "d")))
+                (cond ((equal "a" (get-subcommand it)) "b")
+                      ((equal "c" (get-subcommand it)) "d")))
              (macroexpand-1 '(command-case res ("a" "b") ("c" "d")))))
   (ok (equal '(let ((it res))
-                (cond ((equal "a" (get-subcommand res)) "b")
+                (cond ((equal "a" (get-subcommand it)) "b")
                       (t "d")))
              (macroexpand-1 '(command-case res ("a" "b") (otherwise "d"))))))
